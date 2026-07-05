@@ -9,7 +9,7 @@ UI tests and device work go through the shared device farm — see ~/projects/so
 Never run maestro/simctl/adb against a device directly.
 ```
 
-Setup: `DFARM_URL=http://localhost:3100` (already exported by the farm's mise env on this machine). Set `DFARM_CLIENT=<your project/agent name>` so the dashboard shows who submitted what.
+Setup: install the CLI with `cd ~/projects/sorrentolab/device-farm && mise run cli:install` (standalone binary in `~/.local/bin/dfarm`; re-run the same command to update after the farm changes). `DFARM_URL=http://localhost:3100` is the default. Set `DFARM_CLIENT=<your project/agent name>` so the dashboard shows who submitted what.
 
 ## Run a maestro flow
 

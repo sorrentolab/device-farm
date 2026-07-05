@@ -84,3 +84,8 @@ run = "pm2 start ops/pm2.config.cjs"
 description = "Compile dfarm single-file binary"
 dir = "packages/cli"
 run = "bun build --compile src/main.ts --outfile dist/dfarm"
+
+[tasks."cli:install"]
+description = "Build dfarm and install to ~/.local/bin (re-run any time to update)"
+depends = ["cli:build"]
+run = "install -m 755 packages/cli/dist/dfarm ~/.local/bin/dfarm && echo \"installed $(dfarm --version 2>/dev/null || echo dfarm) -> ~/.local/bin/dfarm\""

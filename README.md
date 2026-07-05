@@ -18,14 +18,18 @@ bun install
 mise run dev          # postgres + inngest (docker) + web on :3100 + device agent
 ```
 
+Install the CLI (compiles a standalone binary into `~/.local/bin/dfarm`; re-run the same command any time to update it):
+
+```sh
+mise run cli:install
+```
+
 Submit something:
 
 ```sh
-bun run packages/cli/src/main.ts devices
-bun run packages/cli/src/main.ts run my-flow.yaml --platform ios --wait
+dfarm devices
+dfarm run my-flow.yaml --platform ios --wait
 ```
-
-Build the standalone CLI binary: `mise run cli:build` → `packages/cli/dist/dfarm`.
 
 ## How it fits together
 
