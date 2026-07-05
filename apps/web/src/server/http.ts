@@ -1,5 +1,7 @@
 import { AgentUnreachableError, LeaseExpiredError, NoDeviceAvailableError } from "@dfarm/shared"
+import * as Cause from "effect/Cause"
 import * as Effect from "effect/Effect"
+import * as Exit from "effect/Exit"
 import type * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
 import { NextResponse } from "next/server"
@@ -30,11 +32,12 @@ export const errorResponse = (error: unknown): Response => {
 }
 
 export const runRoute = async (program: Effect.Effect<Response, unknown>) => {
-  try {
-    return await Effect.runPromise(program)
-  } catch (error) {
-    return errorResponse(error)
-  }
+  // runPromise rejects with a FiberFailure wrapper, which would defeat the
+  // instanceof checks in errorResponse — unwrap the typed failure from the Exit.
+  const exit = await Effect.runPromiseExit(program)
+  if (Exit.isSuccess(exit)) return exit.value
+  const failure = Cause.failureOption(exit.cause)
+  return errorResponse(failure._tag === "Some" ? failure.value : Cause.squash(exit.cause))
 }
 
 export const runJson = async <A>(program: Effect.Effect<A, unknown>, init?: ResponseInit) =>
