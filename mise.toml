@@ -36,8 +36,7 @@ run = "bun run src/main.ts"
 [tasks.dev]
 description = "Dev infra + web + agent"
 depends = ["infra:up", "db:migrate"]
-depends_post = []
-run = "mise run '::dev:web' '::dev:agent'"
+run = "mise run dev:web ::: dev:agent"
 
 [tasks."db:generate"]
 description = "Generate Drizzle migrations from schema"
