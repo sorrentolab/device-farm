@@ -114,7 +114,7 @@ export const runFlowJob = inngest.createFunction(
 
       const finished = await step.waitForEvent(`wait-run-${attempt}`, {
         event: "run/finished",
-        match: `data.runId == "${createdRun.id}"`,
+        if: `async.data.runId == "${createdRun.id}"`,
         timeout: "30m",
       })
 
@@ -141,6 +141,12 @@ export const runFlowJob = inngest.createFunction(
       )
       await step.run(`release-${attempt}`, () => run(leaseService.release(acquired.leaseId)))
 
+      if (outcome === "canceled") {
+        // Cancel already finalized the run, released the lease, and set the job
+        // status; nothing left to do here.
+        return { status: "canceled" }
+      }
+
       if (outcome === "device_lost") {
         const excluded = [...new Set([...(job.excludedDeviceIds ?? []), acquired.deviceId])]
         await step.run(`exclude-${attempt}`, () =>
@@ -150,7 +156,8 @@ export const runFlowJob = inngest.createFunction(
           await step.run(`fail-${attempt}`, () => run(jobRepo.setStatus(jobId, "failed")))
           return { status: "failed" }
         }
-        await step.run(`requeue-${attempt}`, () => run(jobRepo.setStatus(jobId, "queued")))
+        // requeueUnlessTerminal: a cancel racing this path must win.
+        await step.run(`requeue-${attempt}`, () => run(jobRepo.requeueUnlessTerminal(jobId)))
         round += 1
         continue
       }

@@ -93,6 +93,8 @@ export const runRepo = {
     errorMessage?: string | null
   }) =>
     effectify(async () => {
+      // Idempotent: the first terminal outcome wins. Late duplicates (agent exit
+      // racing the watchdog, or a waitForEvent timeout racing a cancel) are no-ops.
       const [row] = await getDb()
         .update(runs)
         .set({
@@ -102,9 +104,13 @@ export const runRepo = {
           errorMessage: input.errorMessage ?? null,
           finishedAt: new Date(),
         })
-        .where(eq(runs.id, input.runId))
+        .where(and(eq(runs.id, input.runId), isNull(runs.outcome)))
         .returning()
-      if (!row) throw new Error("run not found")
+      if (!row) {
+        const [existing] = await getDb().select().from(runs).where(eq(runs.id, input.runId)).limit(1)
+        if (!existing) throw new Error("run not found")
+        return runWithDeviceName(existing)
+      }
       const run = await runWithDeviceName(row)
       realtimeHub.publish({ type: "run.updated", run })
       return run

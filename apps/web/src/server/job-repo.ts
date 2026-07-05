@@ -14,7 +14,7 @@ import type {
   ReservePayload,
   RunFlowPayload,
 } from "@dfarm/shared"
-import { and, desc, eq, gt } from "drizzle-orm"
+import { and, desc, eq, gt, inArray } from "drizzle-orm"
 import * as Effect from "effect/Effect"
 
 type ReservationEndedReason = "released" | "expired"
@@ -124,6 +124,20 @@ export const jobRepo = {
         }),
       ),
     ),
+
+  /** Requeue for another attempt — but never resurrect a job that reached a terminal state (e.g. canceled mid-flight). */
+  requeueUnlessTerminal: (id: string) =>
+    effectify(async () => {
+      const [row] = await getDb()
+        .update(jobs)
+        .set({ status: "queued", updatedAt: new Date() })
+        .where(and(eq(jobs.id, id), inArray(jobs.status, ["queued", "assigned", "running"])))
+        .returning()
+      if (!row) return null
+      const job = mapJob(row)
+      realtimeHub.publish({ type: "job.updated", job })
+      return job
+    }),
 
   setAttemptAndExcluded: (id: string, attempt: number, excludedDeviceIds: ReadonlyArray<string>) =>
     effectify(async () => {

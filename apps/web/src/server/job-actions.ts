@@ -2,6 +2,7 @@ import { devices, leases, runs } from "@/db/schema"
 import { agentClient } from "@/server/agent-client"
 import { getDb } from "@/server/db"
 import { effectify } from "@/server/effect"
+import { sendInngestEvent } from "@/server/events"
 import { jobRepo } from "@/server/job-repo"
 import { leaseService } from "@/server/lease-service"
 import { runRepo } from "@/server/run-repo"
@@ -44,6 +45,15 @@ export const jobActions = {
             errorMessage: "job canceled",
           }),
         )
+        // Wake the orchestrator's waitForEvent immediately instead of letting it
+        // hit the 30m timeout and mistake the cancel for a lost device.
+        await sendInngestEvent("run/finished", {
+          runId: activeRun.id,
+          outcome: "canceled",
+          exitCode: null,
+          artifactsDir: null,
+          errorMessage: "job canceled",
+        })
       }
       if (activeLease) {
         await Effect.runPromise(leaseService.release(activeLease.id).pipe(Effect.catchAll(() => Effect.void)))
