@@ -1,5 +1,6 @@
 import { runRepo } from "@/server/run-repo"
 import * as Effect from "effect/Effect"
+import JSZip from "jszip"
 import { readdir, readFile, stat } from "node:fs/promises"
 import path from "node:path"
 
@@ -30,6 +31,23 @@ export const listArtifacts = (runId: string) =>
       const info = await stat(base).catch(() => null)
       if (!info?.isDirectory()) return { files: [] }
       return { files: await walk(base) }
+    },
+    catch: (error) => (error instanceof Error ? error : new Error(String(error))),
+  })
+
+/** All of a run's artifacts as one zip (artifact dirs are small: logs + screenshots). */
+export const zipArtifacts = (runId: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const base = await resolveRunArtifactsDir(runId)
+      if (!base) return null
+      const info = await stat(base).catch(() => null)
+      if (!info?.isDirectory()) return null
+      const zip = new JSZip()
+      for (const file of await walk(base)) {
+        zip.file(file, await readFile(path.join(base, file)))
+      }
+      return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" })
     },
     catch: (error) => (error instanceof Error ? error : new Error(String(error))),
   })

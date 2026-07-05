@@ -11,43 +11,65 @@ const TERMINAL = ["passed", "failed", "canceled"]
 
 function AttemptRow({ run, isLast }: { run: Run; isLast: boolean }) {
   const [files, setFiles] = useState<string[] | null>(null)
+  const [open, setOpen] = useState(false)
   const state = run.outcome ?? "running"
+
+  const toggleArtifacts = () => {
+    setOpen((was) => !was)
+    if (files === null) api.runArtifacts(run.id).then(setFiles, () => setFiles([]))
+  }
+
   return (
     <div className={`attempt ${state}`}>
-      <span>
-        attempt {run.attempt} on <strong>{run.deviceName}</strong> —{" "}
-        <span className={`badge ${state}`}>{state}</span>
-        {(run.outcome === "device_lost" || run.outcome === "infra_failure") && !isLast && " → retried"}
-        {run.errorMessage && <span className="meta"> · {run.errorMessage}</span>}
-      </span>
-      {run.artifactsDir && (
-        <button
-          onClick={() =>
-            files
-              ? setFiles(null)
-              : api.runArtifacts(run.id).then(setFiles, () => setFiles([]))
-          }
-        >
-          artifacts
-        </button>
-      )}
-      {files && (
-        <span className="mono">
-          {files.length === 0
-            ? "none"
-            : files.map((f) => (
-                <span key={f}>
-                  <a href={`/api/runs/${run.id}/artifacts/${f}`} target="_blank">
-                    {f}
-                  </a>{" "}
-                </span>
-              ))}
-        </span>
-      )}
-      <span className="when">
-        {fmtDuration(run.startedAt, run.finishedAt)}
-        {run.exitCode !== null && ` · exit ${run.exitCode}`}
-      </span>
+      <span className="attempt-dot" aria-hidden />
+      <div className="attempt-body">
+        <div className="attempt-head">
+          <span>
+            attempt {run.attempt} on <strong>{run.deviceName}</strong>
+          </span>
+          <span className={`badge ${state}`}>{state}</span>
+          {(run.outcome === "device_lost" || run.outcome === "infra_failure") && !isLast && (
+            <span className="attempt-note">→ retried</span>
+          )}
+          {run.errorMessage && <span className="attempt-note">{run.errorMessage}</span>}
+          {run.artifactsDir && (
+            <button className="attempt-toggle" onClick={toggleArtifacts}>
+              {open ? "hide artifacts" : "artifacts"}
+            </button>
+          )}
+          <span className="when">
+            {fmtDuration(run.startedAt, run.finishedAt)}
+            {run.exitCode !== null && ` · exit ${run.exitCode}`}
+          </span>
+        </div>
+        {open && (
+          <div className="artifacts-panel">
+            <div className="artifacts-head">
+              <span>
+                {files === null
+                  ? "loading…"
+                  : `${files.length} file${files.length === 1 ? "" : "s"}`}
+              </span>
+              {files !== null && files.length > 0 && (
+                <a className="artifacts-download" href={`/api/runs/${run.id}/artifacts.zip`}>
+                  ⤓ download all (.zip)
+                </a>
+              )}
+            </div>
+            {files !== null && files.length > 0 && (
+              <ul className="artifacts-files">
+                {files.map((f) => (
+                  <li key={f}>
+                    <a className="mono" href={`/api/runs/${run.id}/artifacts/${f}`} target="_blank">
+                      {f}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
