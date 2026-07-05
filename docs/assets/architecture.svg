@@ -1,85 +1,74 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 560" role="img" aria-labelledby="title desc">
-  <title id="title">Device Farm architecture</title>
-  <desc id="desc">dfarm clients and dashboard connect to the Next.js web app, which coordinates Postgres leases, Inngest jobs, and the Bun device agent for local iOS, Android, and physical devices.</desc>
+<svg viewBox="0 0 920 640" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, 'Segoe UI', Roboto, sans-serif" role="img" aria-label="Device Farm architecture">
+  <title>Device Farm architecture</title>
   <defs>
-    <marker id="arrowhead" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M0 0 L8 4 L0 8 Z" fill="#768390"/>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/>
     </marker>
-    <style>
-      text{font-family:-apple-system,'Segoe UI',sans-serif}
-      .node{fill:#161b22;stroke:#444c56;stroke-width:1}
-      .web{stroke:#58a6ff}
-      .agent{stroke:#3fb950}
-      .name{fill:#e6edf3;font-size:14px;font-weight:600}
-      .sub{fill:#e6edf3;font-size:13px}
-      .label{fill:#768390;font-size:12px}
-      .arrow{fill:none;stroke:#768390;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;marker-end:url(#arrowhead)}
-      .cyl{fill:none;stroke:#444c56;stroke-width:1}
-    </style>
   </defs>
 
-  <g>
-    <rect class="node" x="45" y="42" width="230" height="72" rx="10"/>
-    <text class="name" x="160" y="82" text-anchor="middle">dfarm CLI / REST clients</text>
-  </g>
+  <style>
+    .node { fill: #161b22; stroke: #444c56; }
+    .title { fill: #e6edf3; font-size: 14px; font-weight: 600; }
+    .item { fill: #adbac7; font-size: 12.5px; }
+    .label { fill: #8b949e; font-size: 12px; }
+    .edge { stroke: #8b949e; stroke-width: 1.3; fill: none; marker-end: url(#arrow); }
+  </style>
 
-  <g>
-    <rect class="node" x="645" y="42" width="230" height="72" rx="10"/>
-    <text class="name" x="760" y="82" text-anchor="middle">Dashboard (browser)</text>
-  </g>
+  <!-- clients -->
+  <rect class="node" x="60" y="24" width="260" height="56" rx="10"/>
+  <text class="title" x="190" y="57" text-anchor="middle">dfarm CLI / REST clients</text>
 
-  <g>
-    <rect class="node web" x="245" y="168" width="430" height="120" rx="10"/>
-    <text class="name" x="460" y="202" text-anchor="middle">apps/web — Next.js</text>
-    <text class="sub" x="284" y="232">REST API</text>
-    <text class="sub" x="284" y="256">queue + Inngest functions</text>
-    <text class="sub" x="284" y="280">realtime (SSE)</text>
-  </g>
+  <rect class="node" x="590" y="24" width="260" height="56" rx="10"/>
+  <text class="title" x="720" y="57" text-anchor="middle">Dashboard (browser)</text>
 
-  <g>
-    <rect class="node" x="725" y="185" width="150" height="96" rx="10"/>
-    <text class="name" x="800" y="234" text-anchor="middle">Postgres</text>
-    <text class="sub" x="800" y="258" text-anchor="middle">leases = device mutex</text>
-  </g>
+  <!-- web -->
+  <rect class="node" x="230" y="170" width="400" height="130" rx="10" stroke="#58a6ff"/>
+  <text class="title" x="430" y="200" text-anchor="middle">apps/web — Next.js</text>
+  <text class="item" x="266" y="230">REST API</text>
+  <text class="item" x="266" y="254">job queue + Inngest functions</text>
+  <text class="item" x="266" y="278">realtime (SSE)</text>
 
-  <g>
-    <rect class="node agent" x="280" y="355" width="360" height="112" rx="10"/>
-    <text class="name" x="460" y="389" text-anchor="middle">apps/agent — Bun daemon</text>
-    <text class="sub" x="320" y="419">simctl / devicectl / adb</text>
-    <text class="sub" x="320" y="442">maestro runs</text>
-    <text class="sub" x="320" y="459">screenshots ~1fps</text>
-  </g>
+  <!-- postgres cylinder -->
+  <path class="node" d="M720,208 A90,16 0 0 1 900,208 V292 A90,16 0 0 1 720,292 Z"/>
+  <ellipse cx="810" cy="208" rx="90" ry="16" fill="#161b22" stroke="#444c56"/>
+  <text class="title" x="810" y="248" text-anchor="middle">Postgres</text>
+  <text class="item" x="810" y="270" text-anchor="middle">devices · jobs · runs</text>
+  <text class="item" x="810" y="288" text-anchor="middle">leases = device mutex</text>
 
-  <g>
-    <rect class="node" x="70" y="505" width="190" height="40" rx="10"/>
-    <text class="name" x="165" y="530" text-anchor="middle">iOS simulators</text>
-  </g>
-  <g>
-    <rect class="node" x="365" y="505" width="190" height="40" rx="10"/>
-    <text class="name" x="460" y="530" text-anchor="middle">Android emulators</text>
-  </g>
-  <g>
-    <rect class="node" x="660" y="505" width="190" height="40" rx="10"/>
-    <text class="name" x="755" y="530" text-anchor="middle">physical devices</text>
-  </g>
+  <!-- agent -->
+  <rect class="node" x="230" y="392" width="400" height="126" rx="10" stroke="#3fb950"/>
+  <text class="title" x="430" y="422" text-anchor="middle">apps/agent — Bun daemon</text>
+  <text class="item" x="266" y="450">simctl / devicectl / adb discovery</text>
+  <text class="item" x="266" y="472">maestro test runs</text>
+  <text class="item" x="266" y="494">screenshots ~1fps</text>
 
-  <path class="arrow" d="M160 114 V145 H355 V168"/>
-  <text class="label" x="170" y="138">submit jobs / reserve (HTTP)</text>
+  <!-- devices -->
+  <rect class="node" x="105" y="572" width="190" height="48" rx="10"/>
+  <text class="title" x="200" y="601" text-anchor="middle">iOS simulators</text>
+  <rect class="node" x="365" y="572" width="190" height="48" rx="10"/>
+  <text class="title" x="460" y="601" text-anchor="middle">Android emulators</text>
+  <rect class="node" x="625" y="572" width="190" height="48" rx="10"/>
+  <text class="title" x="720" y="601" text-anchor="middle">physical devices</text>
 
-  <path class="arrow" d="M760 114 V145 H565 V168"/>
-  <text class="label" x="610" y="138">live updates (SSE)</text>
+  <!-- clients -> web -->
+  <path class="edge" d="M190,80 V126 H330 V164"/>
+  <text class="label" x="200" y="118">submit jobs / reserve (HTTP)</text>
+  <path class="edge" d="M720,80 V126 H540 V164"/>
+  <text class="label" x="732" y="118">live updates (SSE)</text>
 
-  <path class="arrow" d="M675 228 H725"/>
-  <text class="label" x="668" y="218" text-anchor="end">devices / jobs / leases</text>
+  <!-- web <-> postgres -->
+  <path class="edge" d="M630,242 H714"/>
 
-  <path class="arrow" d="M500 288 V355"/>
-  <text class="label" x="512" y="326">/run /screenshot /exec /boot</text>
+  <!-- web <-> agent -->
+  <path class="edge" d="M530,300 V386"/>
+  <text class="label" x="544" y="348">/run · /screenshot · /exec · /boot</text>
+  <path class="edge" d="M330,392 V306"/>
+  <text class="label" x="316" y="336" text-anchor="end">device report every 5s</text>
+  <text class="label" x="316" y="352" text-anchor="end">(discovery = heartbeat)</text>
 
-  <path class="arrow" d="M320 355 V320 H215 V232 H245"/>
-  <text class="label" x="35" y="314">device report every 5s (discovery = heartbeat)</text>
-
-  <path class="arrow" d="M390 467 V480 H165 V505"/>
-  <path class="arrow" d="M460 467 V505"/>
-  <path class="arrow" d="M530 467 V480 H755 V505"/>
-  <text class="label" x="575" y="497" text-anchor="middle">local device control</text>
+  <!-- agent -> devices -->
+  <path class="edge" d="M300,518 V540 H200 V566"/>
+  <path class="edge" d="M460,518 V566"/>
+  <path class="edge" d="M560,518 V540 H720 V566"/>
+  <text class="label" x="448" y="558" text-anchor="end">local device control</text>
 </svg>

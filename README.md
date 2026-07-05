@@ -1,3 +1,5 @@
+![Rows of docked phones and tablets with softly glowing screens](docs/assets/banner.png)
+
 # device-farm
 
 A shared orchestrator for the iOS simulators, Android emulators, and physical devices attached to this Mac. Every maestro flow and interactive device session goes through one queue, so coding agents and CI stop fighting over simulators — and when a device drops mid-run, the job is retried on another compatible device automatically.
