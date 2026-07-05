@@ -243,21 +243,25 @@ td.mono, .mono { font-family: var(--mono); font-size: 12.5px; }
 /* attempt timeline */
 .timeline { display: flex; flex-direction: column; margin: 8px 0 20px; }
 .timeline .attempt {
-  display: flex; gap: 12px; padding: 7px 0; position: relative;
+  padding: 7px 0;
   border-left: 2px solid var(--line); padding-left: 16px; margin-left: 6px;
 }
 .timeline .attempt .attempt-dot {
-  position: absolute; left: -6px; width: 10px; height: 10px; border-radius: 50%;
+  /* anchored to the head row and centered against whatever its tallest
+     line box is (badge/button), instead of a guessed pixel offset */
+  position: absolute; left: -22px; top: 50%; transform: translateY(-50%);
+  width: 10px; height: 10px; border-radius: 50%;
   background: var(--line);
-  /* center on the head row: 7px row padding + half the 22px head line */
-  top: 13px;
 }
 .timeline .attempt.passed .attempt-dot { background: var(--ok); }
 .timeline .attempt.failed .attempt-dot, .timeline .attempt.device_lost .attempt-dot { background: var(--err); }
 .timeline .attempt.infra_failure .attempt-dot { background: var(--warn); }
 .timeline .attempt.running .attempt-dot { background: var(--link); }
-.timeline .attempt-body { flex: 1; min-width: 0; }
-.timeline .attempt-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; line-height: 22px; }
+.timeline .attempt-body { min-width: 0; }
+.timeline .attempt-head {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  line-height: 22px; position: relative;
+}
 .timeline .attempt-note { color: var(--muted-fg); font-size: 12.5px; }
 .timeline .attempt-toggle { padding: 1px 8px; font-size: 12px; }
 .timeline .when { color: var(--muted-fg); font-size: 12px; margin-left: auto; white-space: nowrap; }

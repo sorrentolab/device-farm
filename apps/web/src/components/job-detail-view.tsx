@@ -21,9 +21,9 @@ function AttemptRow({ run, isLast }: { run: Run; isLast: boolean }) {
 
   return (
     <div className={`attempt ${state}`}>
-      <span className="attempt-dot" aria-hidden />
       <div className="attempt-body">
         <div className="attempt-head">
+          <span className="attempt-dot" aria-hidden />
           <span>
             attempt {run.attempt} on <strong>{run.deviceName}</strong>
           </span>
