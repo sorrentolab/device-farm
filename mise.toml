@@ -12,6 +12,8 @@ DFARM_AGENT_HOST = "local-mac"
 DFARM_ARTIFACTS_DIR = "{{config_root}}/.artifacts"
 INNGEST_DEV = "1"
 INNGEST_BASE_URL = "http://localhost:8288"
+# dockerized inngest dev server calls the host-side web app through this URL
+INNGEST_SERVE_HOST = "http://host.docker.internal:3100"
 
 [tasks."infra:up"]
 description = "Start dev infra (postgres + inngest dev server)"

@@ -60,6 +60,9 @@ export async function GET(request: Request, context: Context) {
         })
 
         interval = setInterval(() => {
+          // SSE comment keepalive: queued jobs can sit idle for a long time and
+          // client fetch implementations (Bun included) kill idle streams.
+          write(": keepalive\n\n")
           Effect.runPromise(jobRepo.get(id)).then((job) => {
             if (job && terminal.has(job.status)) closeDone()
           }, () => undefined)

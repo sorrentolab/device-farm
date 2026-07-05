@@ -32,9 +32,23 @@ export const runFlow = (
       return 0
     }
 
-    yield* Stream.runForEach(context.client.tailJobLogs(job.id), (line) =>
-      writeStdout(`${line}\n`),
-    )
+    // The tail can drop while the job waits in the queue (idle timeouts, server
+    // restarts). Keep re-tailing until the job reaches a terminal status; the
+    // server replays existing logs on reconnect, so dedupe by line count.
+    let printed = 0
+    while (true) {
+      let seen = 0
+      yield* Stream.runForEach(context.client.tailJobLogs(job.id), (line) => {
+        seen += 1
+        if (seen <= printed) return Effect.void
+        printed = seen
+        return writeStdout(`${line}\n`)
+      }).pipe(Effect.catchAll(() => Effect.void))
+
+      const check = yield* context.client.getJob(job.id)
+      if (isTerminalJobStatus(check.job.status)) break
+      yield* sleep(pollIntervalMs)
+    }
 
     const detail = yield* waitForTerminalJob(context.client, job.id)
     yield* writeStderr(`${formatJobFinalLine(detail)}\n`)

@@ -29,6 +29,7 @@ services:
       E2E_TEST_MODE: "1"
       INNGEST_DEV: "1"
       INNGEST_BASE_URL: http://inngest:8288
+      INNGEST_SERVE_HOST: http://web:3100
       DFARM_ARTIFACTS_DIR: /artifacts
     ports:
       - "3101:3100"

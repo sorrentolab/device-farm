@@ -101,8 +101,16 @@ export class DfarmClient {
           ).pipe(
             Stream.decodeText(),
             Stream.splitLines,
-            Stream.filter((l) => l.startsWith("data: ")),
-            Stream.map((l) => l.slice(6)),
+            // Emit only data lines of unnamed events; the `event: done` sentinel's
+            // data payload is protocol, not log output.
+            Stream.mapAccum("" as string, (eventName, line) => {
+              if (line.startsWith("event: ")) return [line.slice(7), [] as string[]]
+              if (line === "") return ["", []]
+              if (line.startsWith("data: ") && eventName === "")
+                return [eventName, [line.slice(6)]]
+              return [eventName, []]
+            }),
+            Stream.flattenIterables,
           )
         }),
       ),
