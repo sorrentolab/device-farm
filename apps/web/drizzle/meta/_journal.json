@@ -8,6 +8,13 @@
       "when": 1783215872516,
       "tag": "0000_same_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783225389258,
+      "tag": "0001_nosy_shard",
+      "breakpoints": true
     }
   ]
 }

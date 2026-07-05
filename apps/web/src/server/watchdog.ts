@@ -1,5 +1,6 @@
 import { devices } from "@/db/schema"
 import { getDb } from "@/server/db"
+import { deviceRepo } from "@/server/device-repo"
 import { handleDeviceLost } from "@/server/device-lost"
 import { effectify } from "@/server/effect"
 import { leaseService } from "@/server/lease-service"
@@ -19,4 +20,5 @@ export const watchdogTick = () =>
     }
 
     await Effect.runPromise(leaseService.cleanupExpired())
+    await Effect.runPromise(deviceRepo.retireStale())
   })

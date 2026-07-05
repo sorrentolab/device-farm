@@ -5,7 +5,7 @@ import { effectify } from "@/server/effect"
 import { mapDevice } from "@/server/mappers"
 import { realtimeHub } from "@/server/realtime"
 import type { AgentReport, AgentReportResponse, Device } from "@dfarm/shared"
-import { and, asc, eq, gt, ne, notInArray } from "drizzle-orm"
+import { and, asc, eq, gt, isNull, lt, ne, notInArray } from "drizzle-orm"
 import * as Effect from "effect/Effect"
 
 const activeLeasePredicate = () => gt(leases.expiresAt, new Date())
@@ -35,6 +35,7 @@ export const deviceRepo = {
         .select({ device: devices, lease: leases })
         .from(devices)
         .leftJoin(leases, and(eq(leases.deviceId, devices.id), activeLeasePredicate()))
+        .where(isNull(devices.retiredAt))
         .orderBy(asc(devices.platform), asc(devices.name), asc(devices.udid))
       return rows.map((row) => mapDevice(row.device, row.lease))
     }),
@@ -64,6 +65,29 @@ export const deviceRepo = {
         .where(and(eq(devices.agentHost, agentHost), eq(devices.udid, udid)))
         .limit(1)
       return row ?? null
+    }),
+
+  /**
+   * Janitor: soft-retire devices that have been offline for over a week.
+   * Rows stay put so run history keeps resolving device names; the list API
+   * hides them and rediscovery un-retires them.
+   */
+  retireStale: () =>
+    effectify(async () => {
+      const now = new Date()
+      const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      const retired = await getDb()
+        .update(devices)
+        .set({ retiredAt: now, updatedAt: now })
+        .where(
+          and(
+            eq(devices.status, "offline"),
+            isNull(devices.retiredAt),
+            lt(devices.lastHeartbeatAt, cutoff),
+          ),
+        )
+        .returning()
+      return retired.length
     }),
 
   getRawById: (id: string) =>
@@ -137,6 +161,8 @@ export const deviceRepo = {
                 bootState: discovered.bootState,
                 status: "online",
                 lastHeartbeatAt: now,
+                // a retired device that reappears in discovery comes back to life
+                retiredAt: null,
                 updatedAt: now,
               },
             })

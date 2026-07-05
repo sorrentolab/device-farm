@@ -27,6 +27,8 @@ export const devices = pgTable(
     bootState: text("boot_state").notNull().default("shutdown"),
     watched: boolean("watched").notNull().default(false),
     lastHeartbeatAt: timestamp("last_heartbeat_at", { withTimezone: true }),
+    /** Janitor soft-delete: offline > 7 days. Hidden from the API, kept for run history joins. */
+    retiredAt: timestamp("retired_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
