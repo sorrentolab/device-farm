@@ -149,7 +149,10 @@ h2 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; }
   padding: 10px 20px; border-bottom: 1px solid var(--line);
   background: var(--panel); position: sticky; top: 0; z-index: 10;
 }
-.nav .brand { font-weight: 700; margin-right: 16px; color: var(--text); letter-spacing: 0.2px; }
+.nav .brand {
+  font-weight: 700; margin-right: 16px; color: var(--text); letter-spacing: 0.2px;
+  display: inline-flex; align-items: center; gap: 7px;
+}
 .nav .brand:hover { text-decoration: none; }
 .nav a.tab { color: var(--muted-fg); padding: 5px 12px; font-weight: 500; }
 .nav a.tab:hover { color: var(--text); text-decoration: none; background: var(--panel-2); }

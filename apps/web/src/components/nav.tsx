@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
+import { Logo } from "@/components/logo"
 import { realtime } from "@/lib/realtime-client"
 
 const tabs = [
@@ -19,7 +20,7 @@ export function Nav() {
   return (
     <div className="nav">
       <Link href="/" className="brand">
-        ⏚ device farm
+        <Logo size={15} /> device farm
       </Link>
       {tabs.map((t) => (
         <Link
