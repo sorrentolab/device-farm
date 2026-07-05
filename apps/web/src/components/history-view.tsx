@@ -40,11 +40,6 @@ export function HistoryView() {
           onChange={(e) => setText(e.target.value)}
           style={{ minWidth: 280 }}
         />
-        {jobs !== null && (
-          <span className="ml-auto text-xs text-muted-foreground">
-            {shown.length} of {jobs.length} loaded{hasMore ? " · scroll for more" : ""}
-          </span>
-        )}
       </div>
       {jobs === null ? (
         <div className="empty">Loading…</div>
