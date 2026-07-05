@@ -61,8 +61,14 @@ export function useFarm() {
   return { devices, jobs, frames, error }
 }
 
+/** Usable devices first: online → busy → shutdown → offline, then by name. */
 export const deviceSort = (a: Device, b: Device): number => {
-  const rank = (d: Device) => (d.status === "offline" ? 1 : 0)
+  const rank = (d: Device) => {
+    if (d.status === "offline") return 3
+    if (d.bootState === "shutdown") return 2
+    if (d.status === "busy") return 1
+    return 0
+  }
   return rank(a) - rank(b) || a.name.localeCompare(b.name) || a.udid.localeCompare(b.udid)
 }
 
