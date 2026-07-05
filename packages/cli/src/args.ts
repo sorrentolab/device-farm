@@ -4,6 +4,7 @@ import { UsageError } from "./errors.js"
 import type { CliCommand, HelpTopic, RequirementsInput } from "./types.js"
 
 const commandTopics: readonly HelpTopic[] = [
+  "docs",
   "devices",
   "run",
   "reserve",
@@ -50,6 +51,8 @@ const parseArgsUnsafe = (argv: readonly string[]): CliCommand => {
   const topic = parseTopic(command, "command")
   const args = argv.slice(1)
   switch (topic) {
+    case "docs":
+      return parseDocs(args)
     case "devices":
       return parseDevices(args)
     case "run":
@@ -80,6 +83,12 @@ const parseHelpCommand = (args: readonly string[]): CliCommand => {
   const topic = parseTopic(args[0] ?? failUsage("help requires a command"), "help topic")
 
   return { _tag: "Help", topic }
+}
+
+const parseDocs = (args: readonly string[]): CliCommand => {
+  if (hasHelp(args)) return { _tag: "Help", topic: "docs" }
+  if (args.length > 0) failUsage(`docs takes no arguments`, "docs")
+  return { _tag: "Docs" }
 }
 
 const parseDevices = (args: readonly string[]): CliCommand => {
@@ -431,6 +440,7 @@ const readFlagValue = (
 
 const parseTopic = (value: string, label: "command" | "help topic"): HelpTopic => {
   switch (value) {
+    case "docs":
     case "devices":
     case "run":
     case "reserve":

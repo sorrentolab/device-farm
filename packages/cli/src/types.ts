@@ -10,6 +10,7 @@ export type RequirementsInput = {
 }
 
 export type HelpTopic =
+  | "docs"
   | "devices"
   | "run"
   | "reserve"
@@ -86,6 +87,10 @@ export type CancelCommand = {
   readonly jobId: string
 }
 
+export type DocsCommand = {
+  readonly _tag: "Docs"
+}
+
 export type CliCommand =
   | HelpCommand
   | DevicesCommand
@@ -97,3 +102,4 @@ export type CliCommand =
   | ReleaseCommand
   | StatusCommand
   | CancelCommand
+  | DocsCommand

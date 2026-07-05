@@ -7,6 +7,11 @@ type HelpEntry = {
 }
 
 const entries: Record<HelpTopic, HelpEntry> = {
+  docs: {
+    usage: "dfarm docs",
+    description: "Print the full usage guide for coding agents (what the farm is, how to run flows, reserve devices, and the rules).",
+    example: "dfarm docs",
+  },
   devices: {
     usage: "dfarm devices [--json]",
     description: "List known devices.",
@@ -57,6 +62,7 @@ const entries: Record<HelpTopic, HelpEntry> = {
 }
 
 const commandRows: readonly [HelpTopic, string][] = [
+  ["docs", "Print the agent usage guide"],
   ["devices", "List devices"],
   ["run", "Submit a maestro flow"],
   ["reserve", "Reserve a device"],

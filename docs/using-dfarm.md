@@ -5,7 +5,7 @@ This Mac runs a shared device farm. **Never talk to simulators, emulators, or ph
 Add to your project's CLAUDE.md / AGENTS.md:
 
 ```md
-UI tests and device work go through the shared device farm — see ~/projects/sorrentolab/device-farm/docs/using-dfarm.md.
+UI tests and device work go through the shared device farm — run `dfarm docs` for the usage guide.
 Never run maestro/simctl/adb against a device directly.
 ```
 

@@ -4,6 +4,7 @@ import { ApiError } from "@dfarm/shared"
 import * as Effect from "effect/Effect"
 import { parseArgs } from "./args.js"
 import { runDevices } from "./commands/devices.js"
+import { runDocs } from "./commands/docs.js"
 import { runCancel, runFlow, runStatus } from "./commands/jobs.js"
 import {
   runExec,
@@ -27,6 +28,8 @@ const dispatch = (
       return writeStdout(command.topic ? commandHelp(command.topic) : rootHelp()).pipe(
         Effect.as(0),
       )
+    case "Docs":
+      return runDocs()
     case "Devices":
       return runDevices(context, command)
     case "Run":
