@@ -65,6 +65,15 @@ depends = ["typecheck"]
 description = "Headless e2e: compose e2e stack + bun test suites. Pass a scenario path to run one."
 run = "bun run e2e/setup/run.ts {{arg(name='scenario', default='')}}"
 
+[tasks."boot:infra"]
+description = "Bring up dev infra at boot (used by launchd/pm2 setups)"
+run = "docker compose -f docker-compose.dev.yml up -d --wait"
+
+[tasks.boot]
+description = "Start everything supervised: infra + pm2 web/agent"
+depends = ["boot:infra"]
+run = "pm2 start ops/pm2.config.cjs"
+
 [tasks."cli:build"]
 description = "Compile dfarm single-file binary"
 dir = "packages/cli"

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>rocks.shine.dfarm-web</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>cd ~/projects/sorrentolab/device-farm/apps/web &amp;&amp; mise exec -- ./node_modules/.bin/next start -p 3100</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>DATABASE_URL</key><string>postgres://dfarm:dfarm@localhost:5442/dfarm</string>
+    <key>INNGEST_DEV</key><string>1</string>
+    <key>INNGEST_BASE_URL</key><string>http://localhost:8288</string>
+  </dict>
+  <key>StandardOutPath</key><string>/tmp/dfarm-web.log</string>
+  <key>StandardErrorPath</key><string>/tmp/dfarm-web.log</string>
+</dict>
+</plist>

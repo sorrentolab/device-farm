@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>rocks.shine.dfarm-agent</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>cd ~/projects/sorrentolab/device-farm/apps/agent &amp;&amp; mise exec -- bun run src/main.ts</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>DFARM_URL</key><string>http://localhost:3100</string>
+    <key>DFARM_AGENT_PORT</key><string>4700</string>
+    <key>DFARM_AGENT_URL</key><string>http://localhost:4700</string>
+    <key>DFARM_AGENT_HOST</key><string>local-mac</string>
+  </dict>
+  <key>StandardOutPath</key><string>/tmp/dfarm-agent.log</string>
+  <key>StandardErrorPath</key><string>/tmp/dfarm-agent.log</string>
+</dict>
+</plist>
