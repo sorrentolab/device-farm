@@ -29,7 +29,7 @@ Build the standalone CLI binary: `mise run cli:build` → `packages/cli/dist/dfa
 
 ## How it fits together
 
-![Device Farm architecture: CLI and dashboard talk to the Next.js web app, which schedules onto device agents driving simulators, emulators, and physical devices](docs/assets/architecture.svg)
+![Device Farm architecture: CLI and dashboard talk to the Next.js web app, which schedules onto device agents driving simulators, emulators, and physical devices](docs/assets/architecture.png)
 
 Scheduling is a single Postgres transaction (`FOR UPDATE SKIP LOCKED` + lease insert); Inngest retries around it. Disconnects are caught two ways: the agent notices a device vanished from discovery (~5s) and the server watchdog notices a dead agent via stale heartbeats (~60s). Either way the run is marked `device_lost`, the lease is released, and the job re-acquires a different device — booting a shutdown simulator if that's what it takes.
 
