@@ -14,7 +14,24 @@ const sendJobCreated = (jobId: string, type: string) =>
   })
 
 export async function GET(request: Request) {
-  const status = new URL(request.url).searchParams.get("status")
+  const params = new URL(request.url).searchParams
+  if (params.get("terminal") === "1") {
+    const limit = Math.min(Math.max(Number(params.get("limit")) || 50, 1), 200)
+    const offset = Math.max(Number(params.get("offset")) || 0, 0)
+    return runJson(
+      // Fetch one extra row so the client knows whether another page exists.
+      jobRepo.listTerminal(limit + 1, offset).pipe(
+        Effect.map((jobs) => ({
+          jobs: jobs.slice(0, limit),
+          hasMore: jobs.length > limit,
+        })),
+      ),
+    )
+  }
+  if (params.get("active") === "1") {
+    return runJson(jobRepo.listActive().pipe(Effect.map((jobs) => ({ jobs }))))
+  }
+  const status = params.get("status")
   return runJson(jobRepo.list(status).pipe(Effect.map((jobs) => ({ jobs }))))
 }
 

@@ -19,8 +19,10 @@ export function useFarm() {
 
   useEffect(() => {
     let alive = true
+    // Jobs here are the ACTIVE set (queue page + device rows); history has its
+    // own paginated fetch so this doesn't grow with every job ever run.
     const refresh = () =>
-      Promise.all([api.devices(), api.jobs()])
+      Promise.all([api.devices(), api.activeJobs()])
         .then(([d, j]) => {
           if (!alive) return
           setDevices([...d])

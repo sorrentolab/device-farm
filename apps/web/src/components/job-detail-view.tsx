@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
 import type { Run } from "@dfarm/shared"
-import { api, fmtDateTime, fmtDuration, type JobDetail } from "@/lib/api"
+import { api, fmtDuration, fmtExact, type JobDetail } from "@/lib/api"
 import { realtime } from "@/lib/realtime-client"
 import { describeRequirements } from "@/components/queue-view"
 
@@ -175,7 +175,7 @@ export function JobDetailView({ jobId }: { jobId: string }) {
       <p className="subtitle">
         {job.type === "run_flow" ? "maestro flow" : "interactive reservation"} ·{" "}
         {describeRequirements(job.requirements)} · submitted by <strong>{job.createdBy}</strong> ·{" "}
-        {fmtDateTime(job.createdAt)}
+        {fmtExact(job.createdAt)}
         {!finished && (
           <>
             {" "}

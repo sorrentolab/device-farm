@@ -2,19 +2,16 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { fmtDateTime } from "@/lib/api"
-import { jobSort, useFarm } from "@/lib/use-farm"
+import { fmtAgo, fmtExact } from "@/lib/api"
+import { useHistory } from "@/lib/use-history"
 import { describeRequirements } from "@/components/queue-view"
 
-const TERMINAL = ["passed", "failed", "canceled"]
-
 export function HistoryView() {
-  const { jobs, error } = useFarm()
+  const { jobs, hasMore, error, sentinelRef } = useHistory()
   const [statusFilter, setStatusFilter] = useState("")
   const [text, setText] = useState("")
 
-  const done = (jobs ?? [])
-    .filter((j) => TERMINAL.includes(j.status))
+  const shown = (jobs ?? [])
     .filter((j) => !statusFilter || j.status === statusFilter)
     .filter(
       (j) =>
@@ -23,7 +20,6 @@ export function HistoryView() {
         j.id.startsWith(text) ||
         describeRequirements(j.requirements).includes(text),
     )
-    .sort(jobSort)
 
   return (
     <main>
@@ -44,11 +40,18 @@ export function HistoryView() {
           onChange={(e) => setText(e.target.value)}
           style={{ minWidth: 280 }}
         />
+        {jobs !== null && (
+          <span className="ml-auto text-xs text-muted-foreground">
+            {shown.length} of {jobs.length} loaded{hasMore ? " · scroll for more" : ""}
+          </span>
+        )}
       </div>
       {jobs === null ? (
         <div className="empty">Loading…</div>
-      ) : done.length === 0 ? (
-        <div className="empty">Nothing here yet.</div>
+      ) : shown.length === 0 ? (
+        <div className="empty">
+          {jobs.length === 0 && !hasMore ? "Nothing here yet." : "No loaded jobs match these filters."}
+        </div>
       ) : (
         <div className="table-panel">
           <table>
@@ -64,7 +67,7 @@ export function HistoryView() {
               </tr>
             </thead>
             <tbody>
-              {done.map((j) => (
+              {shown.map((j) => (
                 <tr key={j.id}>
                   <td className="mono">
                     <Link href={`/jobs/${j.id}`}>{j.id.slice(0, 8)}</Link>
@@ -75,12 +78,23 @@ export function HistoryView() {
                   </td>
                   <td className="mono">{describeRequirements(j.requirements)}</td>
                   <td>{j.createdBy}</td>
-                  <td>{Math.max(j.attempt, 1)}/{j.maxAttempts}</td>
-                  <td>{fmtDateTime(j.updatedAt)}</td>
+                  <td>
+                    {Math.max(j.attempt, 1)}/{j.maxAttempts}
+                  </td>
+                  <td>
+                    <span title={fmtExact(j.updatedAt)} className="cursor-default">
+                      {fmtAgo(j.updatedAt)}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {jobs !== null && (
+        <div ref={sentinelRef} className="py-4 text-center text-xs text-muted-foreground">
+          {hasMore ? "loading more…" : jobs.length > 0 ? "end of history" : ""}
         </div>
       )}
     </main>

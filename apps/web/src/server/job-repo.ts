@@ -91,6 +91,30 @@ export const jobRepo = {
       return rows.map(mapJob)
     }),
 
+  /** Finished jobs, newest first — paginated for the history page's infinite scroll. */
+  listTerminal: (limit: number, offset: number) =>
+    effectify(async () => {
+      const rows = await getDb()
+        .select()
+        .from(jobs)
+        .where(inArray(jobs.status, ["passed", "failed", "canceled"]))
+        .orderBy(desc(jobs.updatedAt))
+        .limit(limit)
+        .offset(offset)
+      return rows.map(mapJob)
+    }),
+
+  /** Jobs still in flight (queue page + realtime baseline). */
+  listActive: () =>
+    effectify(async () => {
+      const rows = await getDb()
+        .select()
+        .from(jobs)
+        .where(inArray(jobs.status, ["queued", "assigned", "running"]))
+        .orderBy(desc(jobs.createdAt))
+      return rows.map(mapJob)
+    }),
+
   detail: (id: string): Effect.Effect<JobDetail | null, Error> =>
     jobRepo.get(id).pipe(
       Effect.flatMap((job) => {

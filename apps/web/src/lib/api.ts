@@ -46,20 +46,39 @@ export const api = {
     }),
   runArtifacts: (runId: string) =>
     req<{ files: string[] }>(`/api/runs/${runId}/artifacts`).then((r) => r.files),
+  historyPage: (offset: number, limit = 50) =>
+    req<{ jobs: Job[]; hasMore: boolean }>(`/api/jobs?terminal=1&limit=${limit}&offset=${offset}`),
+  activeJobs: () => req<{ jobs: Job[] }>("/api/jobs?active=1").then((r) => r.jobs),
 }
 
 export const fmtTime = (iso: string | null | undefined): string =>
   iso ? new Date(iso).toLocaleTimeString() : "—"
 
-export const fmtDateTime = (iso: string | null | undefined): string =>
-  iso ? new Date(iso).toLocaleString() : "—"
+/** "1 Jun 2026 10:23pm" */
+export const fmtExact = (iso: string | null | undefined): string => {
+  if (!iso) return "—"
+  const d = new Date(iso)
+  const month = d.toLocaleString("en", { month: "short" })
+  let h = d.getHours()
+  const ampm = h >= 12 ? "pm" : "am"
+  h = h % 12 || 12
+  const min = String(d.getMinutes()).padStart(2, "0")
+  return `${d.getDate()} ${month} ${d.getFullYear()} ${h}:${min}${ampm}`
+}
 
 export const fmtAgo = (iso: string | null | undefined): string => {
   if (!iso) return "—"
   const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
   if (s < 60) return `${Math.floor(s)}s ago`
   if (s < 3600) return `${Math.floor(s / 60)}m ago`
-  return `${Math.floor(s / 3600)}h ago`
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)}d ago`
+  // beyond a week, relative time stops being meaningful — show the date
+  const d = new Date(iso)
+  const month = d.toLocaleString("en", { month: "short" })
+  return d.getFullYear() === new Date().getFullYear()
+    ? `${d.getDate()} ${month}`
+    : `${d.getDate()} ${month} ${d.getFullYear()}`
 }
 
 export const fmtDuration = (startIso: string, endIso: string | null): string => {
