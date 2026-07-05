@@ -66,6 +66,12 @@ export const deviceRepo = {
       return row ?? null
     }),
 
+  getRawById: (id: string) =>
+    effectify(async () => {
+      const [row] = await getDb().select().from(devices).where(eq(devices.id, id)).limit(1)
+      return row ?? null
+    }),
+
   getByUdid: (udid: string) =>
     effectify(async () => {
       const [row] = await getDb().select().from(devices).where(eq(devices.udid, udid)).limit(1)

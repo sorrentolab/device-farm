@@ -50,7 +50,7 @@ function Screen({ device, frame }: { device: Device; frame: string | null }) {
         <img src={src} alt={`${device.name} screen`} />
       ) : device.watched && device.bootState === "shutdown" ? (
         <div className="screen-hint">
-          not booted —<br />boot the {kindLabel[device.kind]} to see its screen
+          not booted —<br />hit boot to see its screen
         </div>
       ) : device.watched && device.status !== "offline" ? (
         <div className="screen-hint">waiting for frames…</div>
@@ -93,8 +93,26 @@ export function DeviceCard({
     }
   }
 
+  const boot = async () => {
+    setBusy(true)
+    try {
+      await api.boot(device.id)
+      // discovery + realtime flip the card to booted/online within a report cycle
+    } catch (e) {
+      alert(`Boot failed: ${e}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const os = `${device.platform === "ios" ? "iOS" : "Android"} ${device.osVersion}`
   const interactive = device.currentLeaseKind === "interactive"
+  const shutdown = device.bootState === "shutdown" && device.status !== "offline"
+  const badge = interactive
+    ? { className: "interactive", label: "reserved" }
+    : shutdown
+      ? { className: "shutdown", label: "shutdown" }
+      : { className: device.status, label: device.status }
 
   return (
     <div className="card">
@@ -104,12 +122,10 @@ export function DeviceCard({
           <span className="name" title={device.udid}>
             {device.name}
           </span>
-          <span className={`badge ${interactive ? "interactive" : device.status}`}>
-            {interactive ? "reserved" : device.status}
-          </span>
+          <span className={`badge ${badge.className}`}>{badge.label}</span>
         </div>
         <div className="meta">
-          {os} · {device.bootState}
+          {os}
           {device.status === "offline" && ` · seen ${fmtAgo(device.lastHeartbeatAt)}`}
         </div>
         {device.currentJobId && (
@@ -121,17 +137,25 @@ export function DeviceCard({
           </div>
         )}
         <div className="actions">
-          <button
-            className={device.watched ? "toggled" : ""}
-            onClick={toggleWatch}
-            disabled={busy || device.status === "offline"}
-            title="Stream this device's screen at ~1fps"
-          >
-            {device.watched ? "◉ watching" : "watch"}
-          </button>
-          <button onClick={reserve} disabled={busy || device.status !== "online"}>
-            reserve
-          </button>
+          {shutdown ? (
+            <button onClick={boot} disabled={busy} title="Boot this device through its agent">
+              {busy ? "booting…" : "boot"}
+            </button>
+          ) : (
+            <>
+              <button
+                className={device.watched ? "toggled" : ""}
+                onClick={toggleWatch}
+                disabled={busy || device.status === "offline"}
+                title="Stream this device's screen at ~1fps"
+              >
+                {device.watched ? "◉ watching" : "watch"}
+              </button>
+              <button onClick={reserve} disabled={busy || device.status !== "online"}>
+                reserve
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

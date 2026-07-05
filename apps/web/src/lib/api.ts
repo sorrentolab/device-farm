@@ -20,6 +20,8 @@ export const api = {
     req<{ jobs: Job[] }>(`/api/jobs${status ? `?status=${status}` : ""}`).then((r) => r.jobs),
   job: (id: string) => req<JobDetail>(`/api/jobs/${id}`),
   cancelJob: (id: string) => req(`/api/jobs/${id}`, { method: "DELETE" }),
+  boot: (deviceId: string) =>
+    req<{ ok: boolean }>(`/api/devices/${deviceId}/boot`, { method: "POST" }),
   setWatched: (deviceId: string, watched: boolean) =>
     req(`/api/devices/${deviceId}/watch`, {
       method: "POST",

@@ -85,6 +85,8 @@ h2 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; }
 .badge.online { color: var(--ok); background: rgba(63,185,80,.12); }
 .badge.busy { color: var(--warn); background: rgba(210,153,34,.12); }
 .badge.offline { color: var(--muted); background: rgba(139,148,158,.12); }
+.badge.shutdown { color: var(--muted); background: rgba(139,148,158,.12); }
+.badge.shutdown::before { background: transparent; border: 1.5px solid currentColor; box-sizing: border-box; }
 .badge.queued { color: var(--muted); background: rgba(139,148,158,.12); }
 .badge.assigned, .badge.running { color: var(--accent); background: rgba(88,166,255,.12); }
 .badge.passed { color: var(--ok); background: rgba(63,185,80,.12); }
