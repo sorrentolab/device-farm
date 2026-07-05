@@ -1,0 +1,63 @@
+name: dfarm-e2e
+
+services:
+  postgres:
+    extends:
+      file: docker-compose.base.yml
+      service: postgres
+
+  inngest:
+    extends:
+      file: docker-compose.base.yml
+      service: inngest
+    command:
+      - inngest
+      - dev
+      - --no-discovery
+      - -u
+      - http://web:3100/api/inngest
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      DATABASE_URL: postgres://dfarm:dfarm@postgres:5432/dfarm
+      E2E_TEST_MODE: "1"
+      INNGEST_DEV: "1"
+      INNGEST_BASE_URL: http://inngest:8288
+      DFARM_ARTIFACTS_DIR: /artifacts
+    ports:
+      - "3101:3100"
+    volumes:
+      - dfarm-e2e-artifacts:/artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  stub-agent:
+    image: oven/bun:1
+    working_dir: /workspace
+    command:
+      - bun
+      - run
+      - apps/agent/src/main.ts
+      - --stub
+    environment:
+      DFARM_URL: http://web:3100
+      DFARM_AGENT_URL: http://stub-agent:4700
+      DFARM_AGENT_HOST: stub-agent
+      DFARM_ARTIFACTS_DIR: /artifacts
+    volumes:
+      - .:/workspace
+      - dfarm-e2e-artifacts:/artifacts
+    depends_on:
+      web:
+        condition: service_started
+
+volumes:
+  dfarm-postgres-data:
+  dfarm-e2e-artifacts:

@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: dfarm
+      POSTGRES_PASSWORD: dfarm
+      POSTGRES_DB: dfarm
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dfarm -d dfarm"]
+      interval: 2s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - dfarm-postgres-data:/var/lib/postgresql/data
+
+  inngest:
+    image: inngest/inngest
+    command:
+      - inngest
+      - dev
+      - --no-discovery
+      - -u
+      - http://host.docker.internal:3100/api/inngest
+
+volumes:
+  dfarm-postgres-data:

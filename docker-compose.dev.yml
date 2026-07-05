@@ -1,0 +1,26 @@
+services:
+  postgres:
+    extends:
+      file: docker-compose.base.yml
+      service: postgres
+    ports:
+      - "5442:5432"
+
+  inngest:
+    extends:
+      file: docker-compose.base.yml
+      service: inngest
+    command:
+      - inngest
+      - dev
+      - --no-discovery
+      - -u
+      - http://host.docker.internal:3100/api/inngest
+    ports:
+      - "8288:8288"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  dfarm-postgres-data:
