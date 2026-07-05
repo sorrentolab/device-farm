@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DATABASE_URL=postgres://dfarm:dfarm@localhost:5442/dfarm",
+        "INNGEST_DEV=1",
+        "INNGEST_BASE_URL=http://localhost:8288",
+        "INNGEST_SERVE_HOST=http://host.docker.internal:3100",
+        "DFARM_ARTIFACTS_DIR=/tmp/dfarm-dev-artifacts",
+        "./node_modules/.bin/next",
+        "dev",
+        "-p",
+        "3100"
+      ],
+      "cwd": "apps/web",
+      "port": 3100
+    }
+  ]
+}

@@ -58,6 +58,7 @@ class RealtimeClient {
 
   private connectWs() {
     let opened = false
+    let settled = false
     let ws: WebSocket
     try {
       const proto = location.protocol === "https:" ? "wss:" : "ws:"
@@ -66,13 +67,26 @@ class RealtimeClient {
       this.connectSse()
       return
     }
+    // Dev servers can leave an upgrade to an unknown path hanging instead of
+    // rejecting it — don't wait forever before falling back to SSE.
+    const probe = setTimeout(() => {
+      if (!opened && !settled) {
+        settled = true
+        ws.close()
+        this.connectSse()
+      }
+    }, 3000)
     ws.onopen = () => {
       opened = true
+      clearTimeout(probe)
       this.retryMs = 1000
       this.setLive(true)
     }
     ws.onmessage = (ev) => this.emit(String(ev.data))
     ws.onclose = () => {
+      clearTimeout(probe)
+      if (settled) return
+      settled = true
       // Never opened → endpoint probably doesn't exist; try SSE instead.
       if (!opened) this.connectSse()
       else this.scheduleRetry(() => this.connectWs())

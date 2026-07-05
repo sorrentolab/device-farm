@@ -68,7 +68,10 @@ const main = async (): Promise<number> => {
 
     await waitForFarm()
 
-    exitCode = await runStreaming(["bun", "test", ...(filter ? [filter] : [])], {
+    // Scenarios wait on real scheduling (stub re-registration is one ~5s report
+    // cycle, failover spans two full runs); bun's default 5s per-test timeout is
+    // far too tight. Waits inside scenarios remain individually bounded.
+    exitCode = await runStreaming(["bun", "test", "--timeout", "120000", ...(filter ? [filter] : [])], {
       cwd: e2eRoot,
       env: {
         ...Bun.env,
