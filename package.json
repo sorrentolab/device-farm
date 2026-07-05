@@ -1,0 +1,9 @@
+{
+  "name": "device-farm",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "e2e"
+  ]
+}

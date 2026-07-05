@@ -1,0 +1,71 @@
+[tools]
+node = "24"
+bun = "latest"
+
+[env]
+DATABASE_URL = "postgres://dfarm:dfarm@localhost:5442/dfarm"
+DFARM_URL = "http://localhost:3100"
+DFARM_WEB_PORT = "3100"
+DFARM_AGENT_URL = "http://localhost:4700"
+DFARM_AGENT_PORT = "4700"
+DFARM_AGENT_HOST = "local-mac"
+DFARM_ARTIFACTS_DIR = "{{config_root}}/.artifacts"
+INNGEST_DEV = "1"
+INNGEST_BASE_URL = "http://localhost:8288"
+
+[tasks."infra:up"]
+description = "Start dev infra (postgres + inngest dev server)"
+run = "docker compose -f docker-compose.dev.yml up -d --wait"
+
+[tasks."infra:down"]
+description = "Stop dev infra"
+run = "docker compose -f docker-compose.dev.yml down"
+
+[tasks."dev:web"]
+description = "Next.js dev server"
+dir = "apps/web"
+run = "./node_modules/.bin/next dev -p $DFARM_WEB_PORT"
+
+[tasks."dev:agent"]
+description = "Device agent (real devices)"
+dir = "apps/agent"
+run = "bun run src/main.ts"
+
+[tasks.dev]
+description = "Dev infra + web + agent"
+depends = ["infra:up", "db:migrate"]
+depends_post = []
+run = "mise run '::dev:web' '::dev:agent'"
+
+[tasks."db:generate"]
+description = "Generate Drizzle migrations from schema"
+dir = "apps/web"
+run = "bunx drizzle-kit generate"
+
+[tasks."db:migrate"]
+description = "Apply Drizzle migrations"
+dir = "apps/web"
+run = "bunx drizzle-kit migrate"
+
+[tasks.typecheck]
+description = "Typecheck all workspaces"
+run = [
+  "bun x tsc -p packages/shared --noEmit",
+  "bun x tsc -p apps/agent --noEmit",
+  "bun x tsc -p packages/cli --noEmit",
+  "bun x tsc -p apps/web --noEmit",
+  "bun x tsc -p e2e --noEmit",
+]
+
+[tasks.lint]
+description = "Lint (typecheck for now)"
+depends = ["typecheck"]
+
+[tasks.e2e]
+description = "Headless e2e: compose e2e stack + bun test suites. Pass a scenario path to run one."
+run = "bun run e2e/setup/run.ts {{arg(name='scenario', default='')}}"
+
+[tasks."cli:build"]
+description = "Compile dfarm single-file binary"
+dir = "packages/cli"
+run = "bun build --compile src/main.ts --outfile dist/dfarm"
