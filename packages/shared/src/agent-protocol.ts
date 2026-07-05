@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema"
-import { BootState, DeviceKind, Platform } from "./domain.js"
+import { BootState, DeviceKind, Platform } from "./domain"
 
 // ---------- agent -> server (web /api/internal/*) ----------
 
@@ -46,6 +46,12 @@ export const RunEvent = Schema.Union(
   }),
   Schema.Struct({
     type: Schema.Literal("device_lost"),
+    message: Schema.String,
+    at: Schema.String,
+  }),
+  /** Tooling broke (driver/connection), not the flow — the farm retries without excluding the device. */
+  Schema.Struct({
+    type: Schema.Literal("infra_failure"),
     message: Schema.String,
     at: Schema.String,
   }),
@@ -116,6 +122,8 @@ export const StubCommand = Schema.Union(
     durationMs: Schema.Number,
     /** force the next fake run to fail with this exit code */
     exitCode: Schema.optionalWith(Schema.Number, { default: () => 0 }),
+    /** "infra" makes the fake run end with an infra_failure event instead of an exit */
+    failureKind: Schema.optional(Schema.Literal("exit", "infra")),
   }),
   Schema.Struct({
     type: Schema.Literal("add_device"),

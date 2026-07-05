@@ -5,7 +5,7 @@ import {
   Job,
   Run,
   RunFlowPayload,
-} from "./domain.js"
+} from "./domain"
 
 // ---------- /api/jobs ----------
 

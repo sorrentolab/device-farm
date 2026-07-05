@@ -43,6 +43,20 @@ export async function POST(request: Request, context: Context) {
                 errorMessage: event.message,
               })
             }
+            if (event.type === "infra_failure") {
+              yield* runRepo.appendLog(
+                runId,
+                `[dfarm] infra failure detected: ${event.message}`,
+                new Date(event.at),
+              )
+              yield* sendFinished({
+                runId,
+                outcome: "infra_failure",
+                exitCode: null,
+                artifactsDir: null,
+                errorMessage: event.message,
+              })
+            }
           }
         }),
       ),

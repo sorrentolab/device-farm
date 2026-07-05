@@ -62,7 +62,8 @@ export const JobStatus = Schema.Literal(
 )
 export type JobStatus = typeof JobStatus.Type
 
-export const RunOutcome = Schema.Literal("passed", "failed", "device_lost", "canceled")
+/** infra_failure = the tooling (driver/connection) broke, not the flow — retried on any device without excluding this one. */
+export const RunOutcome = Schema.Literal("passed", "failed", "device_lost", "infra_failure", "canceled")
 export type RunOutcome = typeof RunOutcome.Type
 
 /** Flow YAML travels as content, not a host path, so a job is re-runnable on any device/host. */
@@ -92,6 +93,8 @@ export const Job = Schema.Struct({
   createdBy: Schema.String,
   attempt: Schema.Number,
   maxAttempts: Schema.Number,
+  /** Human-readable reason when the farm itself failed the job (impossible requirements, retries exhausted). */
+  error: Schema.optionalWith(Schema.NullOr(Schema.String), { default: () => null }),
   createdAt: Schema.String,
   updatedAt: Schema.String,
 })

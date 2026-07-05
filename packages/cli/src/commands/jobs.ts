@@ -32,6 +32,10 @@ export const runFlow = (
       return 0
     }
 
+    // Always surface the job id up front so a queued/stuck job is inspectable
+    // (dfarm status <id>, dashboard) even before any log output arrives.
+    yield* writeStderr(`job ${job.id} submitted — waiting for a device\n`)
+
     // The tail can drop while the job waits in the queue (idle timeouts, server
     // restarts). Keep re-tailing until the job reaches a terminal status; the
     // server replays existing logs on reconnect, so dedupe by line count.

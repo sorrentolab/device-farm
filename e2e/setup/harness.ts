@@ -151,13 +151,18 @@ export class SeedClient {
 
   configureRun(
     udid: string,
-    options: { readonly durationMs: number; readonly exitCode?: number },
+    options: {
+      readonly durationMs: number
+      readonly exitCode?: number
+      readonly failureKind?: "exit" | "infra"
+    },
   ): Effect.Effect<void, unknown, never> {
     return this.stub({
       type: "configure_run",
       udid,
       durationMs: options.durationMs,
       exitCode: options.exitCode ?? 0,
+      ...(options.failureKind ? { failureKind: options.failureKind } : {}),
     })
   }
 

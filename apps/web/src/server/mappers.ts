@@ -51,6 +51,7 @@ export const mapJob = (row: JobRow): Job => ({
   createdBy: row.createdBy,
   attempt: row.attempt,
   maxAttempts: row.maxAttempts,
+  error: row.error ?? null,
   createdAt: isoRequired(row.createdAt),
   updatedAt: isoRequired(row.updatedAt),
 })

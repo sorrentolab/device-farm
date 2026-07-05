@@ -125,6 +125,20 @@ export const jobRepo = {
       ),
     ),
 
+  /** Fail a job with a human-readable reason (shown in the CLI final line and job detail). */
+  failWithError: (id: string, message: string) =>
+    effectify(async () => {
+      const [row] = await getDb()
+        .update(jobs)
+        .set({ status: "failed", error: message, updatedAt: new Date() })
+        .where(eq(jobs.id, id))
+        .returning()
+      if (!row) throw new Error("job not found")
+      const job = mapJob(row)
+      realtimeHub.publish({ type: "job.updated", job })
+      return job
+    }),
+
   /** Requeue for another attempt — but never resurrect a job that reached a terminal state (e.g. canceled mid-flight). */
   requeueUnlessTerminal: (id: string) =>
     effectify(async () => {

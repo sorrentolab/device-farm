@@ -198,6 +198,7 @@ h2 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; }
 .badge.assigned, .badge.running { color: var(--link); background: rgba(88, 166, 255, 0.12); }
 .badge.passed { color: var(--ok); background: rgba(63, 185, 80, 0.12); }
 .badge.failed, .badge.device_lost { color: var(--err); background: rgba(248, 81, 73, 0.12); }
+.badge.infra_failure { color: var(--warn); background: rgba(210, 153, 34, 0.12); }
 .badge.canceled { color: var(--muted-fg); background: rgba(139, 148, 158, 0.12); }
 .badge.interactive { color: var(--violet); background: rgba(188, 140, 255, 0.12); }
 
@@ -251,6 +252,7 @@ td.mono, .mono { font-family: var(--mono); font-size: 12.5px; }
 }
 .timeline .attempt.passed::before { background: var(--ok); }
 .timeline .attempt.failed::before, .timeline .attempt.device_lost::before { background: var(--err); }
+.timeline .attempt.infra_failure::before { background: var(--warn); }
 .timeline .attempt.running::before { background: var(--link); }
 .timeline .attempt .when { color: var(--muted-fg); font-size: 12px; margin-left: auto; }
 

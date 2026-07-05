@@ -53,6 +53,8 @@ export const jobs = pgTable("jobs", {
     .$type<string[]>()
     .notNull()
     .default(sql`'[]'::jsonb`),
+  /** why the farm failed this job (impossible requirements, retries exhausted) */
+  error: text("error"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })

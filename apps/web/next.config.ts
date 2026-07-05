@@ -1,20 +1,11 @@
 import type { NextConfig } from "next"
+
 const nextConfig: NextConfig = {
   serverExternalPackages: ["postgres"],
+  // @dfarm/shared ships TS source with extensionless relative imports; Next
+  // transpiles it directly. Never alias it to a local copy — a stale duplicate
+  // silently forked the wire schema once (see repo history).
   transpilePackages: ["@dfarm/shared"],
-  turbopack: {
-    resolveExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"],
-    resolveAlias: {
-      "@dfarm/shared": "./src/shared-proxy/index.ts",
-    },
-  },
-  webpack: (config) => {
-    config.resolve.alias = {
-      ...(config.resolve.alias ?? {}),
-      "@dfarm/shared": "./src/shared-proxy/index.ts",
-    }
-    return config
-  },
 }
 
 export default nextConfig

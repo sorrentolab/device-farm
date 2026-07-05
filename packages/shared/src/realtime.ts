@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema"
-import { Device, Job, Run } from "./domain.js"
+import { Device, Job, Run } from "./domain"
 
 /** Messages pushed to the dashboard over WS (or SSE fallback — same payloads). */
 export const RealtimeMessage = Schema.Union(

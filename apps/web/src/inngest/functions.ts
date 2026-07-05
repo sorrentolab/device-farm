@@ -24,38 +24,47 @@ type AcquireStepResult =
         kind: "simulator" | "emulator" | "physical"
       }
     }
-  | { ok: false; bootableCandidateUdid?: string }
+  | { ok: false; bootableCandidateUdid?: string; noMatchingDevice?: boolean }
 
-const acquireForJob = async (job: JobRow, ttlSeconds: number): Promise<AcquireStepResult> => {
-  try {
-    const acquired = await run(
-      leaseService.acquire({
+const acquireForJob = (job: JobRow, ttlSeconds: number): Promise<AcquireStepResult> =>
+  // The no-device case is handled INSIDE the Effect: runPromise rejects with a
+  // FiberFailure wrapper, so `instanceof NoDeviceAvailableError` on the caught
+  // value never matches and would crash the step instead of queueing/booting.
+  run(
+    leaseService
+      .acquire({
         requirements: job.requirements ?? {},
         kind: job.type === "reserve" ? "interactive" : "job",
         ttlSeconds,
         jobId: job.id,
         excludeDeviceIds: job.excludedDeviceIds ?? [],
-      }),
-    )
-    return {
-      ok: true,
-      leaseId: acquired.lease.id,
-      deviceId: acquired.device.id,
-      target: {
-        agentHost: acquired.deviceRow.agentHost,
-        agentUrl: acquired.deviceRow.agentUrl,
-        udid: acquired.deviceRow.udid,
-        platform: acquired.deviceRow.platform as "ios" | "android",
-        kind: acquired.deviceRow.kind as "simulator" | "emulator" | "physical",
-      },
-    }
-  } catch (error) {
-    if (error instanceof NoDeviceAvailableError) {
-      return { ok: false, bootableCandidateUdid: error.bootableCandidateUdid }
-    }
-    throw error
-  }
-}
+      })
+      .pipe(
+        Effect.map(
+          (acquired): AcquireStepResult => ({
+            ok: true,
+            leaseId: acquired.lease.id,
+            deviceId: acquired.device.id,
+            target: {
+              agentHost: acquired.deviceRow.agentHost,
+              agentUrl: acquired.deviceRow.agentUrl,
+              udid: acquired.deviceRow.udid,
+              platform: acquired.deviceRow.platform as "ios" | "android",
+              kind: acquired.deviceRow.kind as "simulator" | "emulator" | "physical",
+            },
+          }),
+        ),
+        Effect.catchIf(
+          (e): e is NoDeviceAvailableError => e instanceof NoDeviceAvailableError,
+          (e) =>
+            Effect.succeed<AcquireStepResult>({
+              ok: false,
+              bootableCandidateUdid: e.bootableCandidateUdid,
+              noMatchingDevice: e.noMatchingDevice,
+            }),
+        ),
+      ),
+  )
 
 const bootByUdid = async (udid: string) => {
   const row = await run(deviceRepo.getByUdid(udid))
@@ -91,8 +100,24 @@ export const runFlowJob = inngest.createFunction(
 
       const acquired = await step.run(`acquire-${attempt}-${round}`, () => acquireForJob(job, 3600))
       if (!acquired.ok) {
+        if (acquired.noMatchingDevice) {
+          // Nothing registered can ever satisfy this — fail loudly, not silently.
+          await step.run(`no-match-${round}`, () =>
+            run(
+              jobRepo.failWithError(
+                jobId,
+                "no registered device matches the requirements — check --platform/--kind/--name/--device against `dfarm devices`",
+              ),
+            ),
+          )
+          return { status: "failed", reason: "no matching device" }
+        }
         if (acquired.bootableCandidateUdid) {
-          await step.run(`boot-${attempt}-${round}`, () => bootByUdid(acquired.bootableCandidateUdid!))
+          // Boot failures (agent hiccup, slow simulator) must not kill the
+          // orchestration — fall back to waiting and re-acquiring.
+          await step
+            .run(`boot-${attempt}-${round}`, () => bootByUdid(acquired.bootableCandidateUdid!))
+            .catch(() => step.sleep(`boot-retry-wait-${attempt}-${round}`, "15s"))
         } else {
           await step.waitForEvent(`wait-device-${attempt}-${round}`, {
             event: "device/released",
@@ -147,13 +172,27 @@ export const runFlowJob = inngest.createFunction(
         return { status: "canceled" }
       }
 
-      if (outcome === "device_lost") {
-        const excluded = [...new Set([...(job.excludedDeviceIds ?? []), acquired.deviceId])]
+      if (outcome === "device_lost" || outcome === "infra_failure") {
+        // device_lost: don't re-pick the device that vanished.
+        // infra_failure: the device is fine (driver/tooling broke) — keep it eligible.
+        const excluded =
+          outcome === "device_lost"
+            ? [...new Set([...(job.excludedDeviceIds ?? []), acquired.deviceId])]
+            : [...(job.excludedDeviceIds ?? [])]
         await step.run(`exclude-${attempt}`, () =>
           run(jobRepo.setAttemptAndExcluded(jobId, attempt, excluded)),
         )
         if (attempt >= job.maxAttempts) {
-          await step.run(`fail-${attempt}`, () => run(jobRepo.setStatus(jobId, "failed")))
+          await step.run(`fail-${attempt}`, () =>
+            run(
+              jobRepo.failWithError(
+                jobId,
+                outcome === "device_lost"
+                  ? `device lost on all ${job.maxAttempts} attempts`
+                  : `infra failure on all ${job.maxAttempts} attempts: ${data.errorMessage ?? "driver/tooling error"}`,
+              ),
+            ),
+          )
           return { status: "failed" }
         }
         // requeueUnlessTerminal: a cancel racing this path must win.
@@ -185,8 +224,21 @@ export const reserveJob = inngest.createFunction(
         acquireForJob(job, payload.ttlSeconds),
       )
       if (!acquired.ok) {
+        if (acquired.noMatchingDevice) {
+          await step.run(`no-match-reserve-${round}`, () =>
+            run(
+              jobRepo.failWithError(
+                jobId,
+                "no registered device matches the requirements — check them against `dfarm devices`",
+              ),
+            ),
+          )
+          return { status: "failed", reason: "no matching device" }
+        }
         if (acquired.bootableCandidateUdid) {
-          await step.run(`boot-reserve-${round}`, () => bootByUdid(acquired.bootableCandidateUdid!))
+          await step
+            .run(`boot-reserve-${round}`, () => bootByUdid(acquired.bootableCandidateUdid!))
+            .catch(() => step.sleep(`boot-reserve-retry-${round}`, "15s"))
         } else {
           await step.waitForEvent(`wait-reserve-device-${round}`, {
             event: "device/released",

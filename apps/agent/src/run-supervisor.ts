@@ -12,6 +12,7 @@ import type { AgentConfig } from "./types.js"
 type StubRunConfig = {
   readonly durationMs: number
   readonly exitCode: number
+  readonly failureKind?: "exit" | "infra"
 }
 
 type ActiveRunState = {
@@ -22,12 +23,30 @@ type ActiveRunState = {
   process: Bun.ReadableSubprocess | undefined
   completed: boolean
   sawDeviceLoss: boolean
+  infraReason: string | undefined
   kill: () => void
 }
 
 const now = (): string => new Date().toISOString()
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms))
+
+/**
+ * Tooling failures worth retrying (the flow never really ran): dropped
+ * XCUITest/driver connections, gRPC transport errors, driver startup crashes.
+ * Deliberately conservative — a plain assertion failure must stay `failed`.
+ */
+const looksLikeInfraFailure = (line: string): boolean => {
+  const lower = line.toLowerCase()
+  if (lower.includes("xcuitest") && (lower.includes("driver") || lower.includes("connection"))) return true
+  if (lower.includes("maestrodriverstartupexception")) return true
+  if (lower.includes("io exception") || lower.includes("ioexception")) return true
+  if (lower.includes("unavailable: io error")) return true
+  if (lower.includes("econnrefused") || lower.includes("econnreset")) return true
+  if (lower.includes("connection refused") || lower.includes("connection reset") || lower.includes("connection dropped")) return true
+  if (lower.includes("socket hang up")) return true
+  return false
+}
 
 const looksLikeDeviceLoss = (line: string): boolean => {
   const lower = line.toLowerCase()
@@ -78,6 +97,7 @@ export class RunSupervisor {
       process: undefined,
       completed: false,
       sawDeviceLoss: false,
+      infraReason: undefined,
       kill: () => {
         state.process?.kill("SIGTERM")
       },
@@ -99,6 +119,7 @@ export class RunSupervisor {
     this.stubRunConfig.set(command.udid, {
       durationMs: command.durationMs,
       exitCode: command.exitCode,
+      failureKind: command.failureKind,
     })
   }
 
@@ -140,6 +161,7 @@ export class RunSupervisor {
       const onLine = (line: string): void => {
         if (state.completed) return
         if (looksLikeDeviceLoss(line)) state.sawDeviceLoss = true
+        if (!state.infraReason && looksLikeInfraFailure(line)) state.infraReason = line.trim().slice(0, 300)
         this.enqueue(state, { type: "log", line, at: now() })
       }
 
@@ -150,6 +172,13 @@ export class RunSupervisor {
 
       if (exitCode !== 0 && (state.sawDeviceLoss || !this.discovery.has(state.request.udid))) {
         await this.completeDeviceLost(state, `maestro lost device ${state.request.udid}`)
+        return
+      }
+
+      // Driver/tooling breakage (e.g. XCUITest connection drop) — the device is
+      // fine and the flow never really ran, so report it as retryable.
+      if (exitCode !== 0 && state.infraReason) {
+        await this.completeInfraFailure(state, state.infraReason)
         return
       }
 
@@ -181,11 +210,16 @@ export class RunSupervisor {
         return
       }
 
+      const infra = runConfig.failureKind === "infra"
       const lines = [
         `maestro: starting run ${state.request.runId} on ${state.request.udid}`,
         "maestro: preparing app state",
         "maestro: executing flow.yaml",
-        runConfig.exitCode === 0 ? "maestro: flow passed" : "maestro: flow failed",
+        infra
+          ? "maestro: XCUITest driver connection dropped"
+          : runConfig.exitCode === 0
+            ? "maestro: flow passed"
+            : "maestro: flow failed",
       ]
       const delay = Math.max(100, Math.floor(runConfig.durationMs / lines.length))
       for (const line of lines) {
@@ -198,6 +232,10 @@ export class RunSupervisor {
       await mkdir(state.artifactsDir, { recursive: true })
       await writeFile(join(state.artifactsDir, "maestro.log"), lines.join("\n") + "\n")
       await writeFile(join(state.artifactsDir, "screenshot.png"), makeStubPng(Date.now() % 10_000))
+      if (infra) {
+        await this.completeInfraFailure(state, "stub: XCUITest driver connection dropped")
+        return
+      }
       await this.completeExit(state, runConfig.exitCode)
     } catch (error) {
       if (!state.completed) {
@@ -224,6 +262,15 @@ export class RunSupervisor {
     if (state.completed) return
     state.completed = true
     this.enqueue(state, { type: "exit", exitCode, artifactsDir: state.artifactsDir, at: now() })
+    await this.flush(state)
+    this.cleanup(state)
+  }
+
+  private async completeInfraFailure(state: ActiveRunState, message: string): Promise<void> {
+    if (state.completed) return
+    state.completed = true
+    state.process?.kill("SIGTERM")
+    this.enqueue(state, { type: "infra_failure", message, at: now() })
     await this.flush(state)
     this.cleanup(state)
   }

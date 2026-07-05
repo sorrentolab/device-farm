@@ -35,8 +35,9 @@ export const formatJobFinalLine = (detail: JobDetail): string => {
   const run = latestRun(detail.runs)
   const attempt = run?.attempt ?? detail.job.attempt
   const device = run ? ` on ${run.deviceName}` : ""
+  const reason = detail.job.error ? ` — ${detail.job.error}` : ""
 
-  return `job ${detail.job.id} ${detail.job.status} (attempt ${attempt}/${detail.job.maxAttempts}${device})`
+  return `job ${detail.job.id} ${detail.job.status} (attempt ${attempt}/${detail.job.maxAttempts}${device})${reason}`
 }
 
 export const formatJobStatus = (detail: JobDetail): string => {

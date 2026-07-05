@@ -17,7 +17,7 @@ function AttemptRow({ run, isLast }: { run: Run; isLast: boolean }) {
       <span>
         attempt {run.attempt} on <strong>{run.deviceName}</strong> —{" "}
         <span className={`badge ${state}`}>{state}</span>
-        {run.outcome === "device_lost" && !isLast && " → retried"}
+        {(run.outcome === "device_lost" || run.outcome === "infra_failure") && !isLast && " → retried"}
         {run.errorMessage && <span className="meta"> · {run.errorMessage}</span>}
       </span>
       {run.artifactsDir && (
@@ -164,6 +164,8 @@ export function JobDetailView({ jobId }: { jobId: string }) {
           </>
         )}
       </p>
+
+      {job.error && <div className="error-banner">{job.error}</div>}
 
       <h2>Attempts</h2>
       {sorted.length === 0 ? (

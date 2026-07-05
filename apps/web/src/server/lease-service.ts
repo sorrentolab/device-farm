@@ -12,6 +12,7 @@ import {
   eq,
   gt,
   inArray,
+  isNull,
   lte,
   ne,
   notExists,
@@ -142,9 +143,24 @@ export const leaseService = {
             const bootable = bootableRows.find((device) =>
               matchesRequirements(device, input.requirements),
             )
+            // Distinguish "nothing matches right now" from "nothing will EVER
+            // match": if no registered (non-retired) device fits the
+            // requirements regardless of status, waiting is pointless and the
+            // job should fail fast instead of sitting queued forever.
+            let noMatchingDevice = false
+            if (!bootable) {
+              const registered = await tx
+                .select()
+                .from(devices)
+                .where(and(isNull(devices.retiredAt), ...(excludeDeviceIds.length > 0 ? [notInArray(devices.id, [...excludeDeviceIds])] : [])))
+              noMatchingDevice = !registered.some((device) =>
+                matchesRequirements(device, input.requirements),
+              )
+            }
             throw new NoDeviceAvailableError({
               requirements: input.requirements,
               bootableCandidateUdid: bootable?.udid,
+              noMatchingDevice,
             })
           }
 

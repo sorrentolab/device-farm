@@ -11,6 +11,8 @@ export class NoDeviceAvailableError extends Data.TaggedError("NoDeviceAvailableE
   readonly requirements: unknown
   /** a matching shutdown simulator exists and could be booted */
   readonly bootableCandidateUdid?: string
+  /** NO registered device matches at all (not just busy/offline) — waiting will never help */
+  readonly noMatchingDevice?: boolean
 }> {}
 
 /** Lease token invalid, released, or past its TTL — API surfaces this as HTTP 410. */

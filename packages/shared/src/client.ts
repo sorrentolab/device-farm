@@ -11,10 +11,10 @@ import {
   JobSubmitRequest,
   Reservation,
   ReservationCreateRequest,
-} from "./api.js"
-import { Job } from "./domain.js"
-import { ApiError } from "./errors.js"
-import { StubCommand } from "./agent-protocol.js"
+} from "./api"
+import { Job } from "./domain"
+import { ApiError } from "./errors"
+import { StubCommand } from "./agent-protocol"
 
 const request = (
   baseUrl: string,
