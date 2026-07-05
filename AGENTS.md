@@ -71,5 +71,3 @@ How to apply:
 
 Using gpt-5.5 inside workflows and subagents (the model parameter only takes Claude models, so use a wrapper):
 - Spawn a thin Claude wrapper agent with `model: 'sonnet', effort: 'low'` whose prompt instructs it to write a self-contained codex prompt, run `codex exec` via Bash, and return codex's final message plus the list of files it changed, verbatim, without editing anything itself. The wrapper exists only to bridge the model parameter to the Codex CLI — all judgment stays with the orchestrator, all implementation with gpt-5.5.
-
-<!-- Note: the final bullet above was truncated in the source scan; the text after "and return" is a faithful reconstruction of its intent, pending the original doc. -->
