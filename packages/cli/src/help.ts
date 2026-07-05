@@ -25,13 +25,13 @@ const entries: Record<HelpTopic, HelpEntry> = {
   },
   run: {
     usage:
-      "dfarm run <flow.yaml> [--platform ios|android] [--kind simulator|emulator|physical] [--os-min X] [--os-max X] [--name PATTERN] [--device UDID] [--app PATH] [--bundle-id ID] [--env K=V]... [--max-attempts N] [--wait]",
+      "dfarm run <flow.yaml> [--platform ios|android] [--kind simulator|emulator|physical] [--os-min X] [--os-max X] [--name NAME (exact; * wildcard or /regex/)] [--device UDID] [--app PATH] [--bundle-id ID] [--env K=V]... [--max-attempts N] [--wait]",
     description: "Submit a maestro flow run.",
     example: "dfarm run flow.yaml --platform ios --app MyApp.app --env API_URL=http://localhost --wait",
   },
   reserve: {
     usage:
-      "dfarm reserve [--platform ios|android] [--kind simulator|emulator|physical] [--os-min X] [--os-max X] [--name PATTERN] [--device UDID] [--ttl 15m] [--wait]",
+      "dfarm reserve [--platform ios|android] [--kind simulator|emulator|physical] [--os-min X] [--os-max X] [--name NAME (exact; * wildcard or /regex/)] [--device UDID] [--ttl 15m] [--wait]",
     description: "Reserve a matching device.",
     example: "dfarm reserve --platform android --ttl 15m --wait",
   },
@@ -56,7 +56,7 @@ const entries: Record<HelpTopic, HelpEntry> = {
     example: "dfarm release res_123 --token token_abc",
   },
   status: {
-    usage: "dfarm status <jobId> [--json]",
+    usage: "dfarm status <jobId> [--json] [--wait]",
     description: "Show a job and its attempt timeline.",
     example: "dfarm status job_123",
   },

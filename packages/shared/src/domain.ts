@@ -42,7 +42,7 @@ export const DeviceRequirements = Schema.Struct({
   /** Inclusive bounds, compared as dotted version strings (e.g. "17.0") */
   osMin: Schema.optional(Schema.String),
   osMax: Schema.optional(Schema.String),
-  /** Case-insensitive substring or /regex/ against device name */
+  /** Exact device name (case-insensitive); `*` wildcards or /regex/ for patterns */
   namePattern: Schema.optional(Schema.String),
   /** Pin to one exact device */
   deviceUdid: Schema.optional(Schema.String),

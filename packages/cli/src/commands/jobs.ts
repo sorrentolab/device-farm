@@ -36,25 +36,39 @@ export const runFlow = (
     // (dfarm status <id>, dashboard) even before any log output arrives.
     yield* writeStderr(`job ${job.id} submitted — waiting for a device\n`)
 
-    // The tail can drop while the job waits in the queue (idle timeouts, server
-    // restarts). Keep re-tailing until the job reaches a terminal status; the
-    // server replays existing logs on reconnect, so dedupe by line count.
+    return yield* tailUntilDone(context, job.id)
+  })
+
+/**
+ * Stream a job's logs to stdout until it reaches a terminal status, then exit
+ * with the run's code. Survives dropped streams (idle timeouts, server
+ * restarts): the server replays logs on reconnect, dedupe is by line count.
+ * Shared by `run --wait` and `status --wait` — the latter is the resume path
+ * when a wait stream dies on the client side.
+ */
+const tailUntilDone = (
+  context: CliContext,
+  jobId: string,
+): Effect.Effect<number, ApiError | RuntimeError> =>
+  Effect.gen(function* () {
     let printed = 0
     while (true) {
       let seen = 0
-      yield* Stream.runForEach(context.client.tailJobLogs(job.id), (line) => {
+      yield* Stream.runForEach(context.client.tailJobLogs(jobId), (line) => {
         seen += 1
         if (seen <= printed) return Effect.void
         printed = seen
         return writeStdout(`${line}\n`)
       }).pipe(Effect.catchAll(() => Effect.void))
 
-      const check = yield* context.client.getJob(job.id)
-      if (isTerminalJobStatus(check.job.status)) break
+      const check = yield* context.client.getJob(jobId).pipe(
+        Effect.catchAll(() => Effect.succeed(null)),
+      )
+      if (check && isTerminalJobStatus(check.job.status)) break
       yield* sleep(pollIntervalMs)
     }
 
-    const detail = yield* waitForTerminalJob(context.client, job.id)
+    const detail = yield* waitForTerminalJob(context.client, jobId)
     yield* writeStderr(`${formatJobFinalLine(detail)}\n`)
 
     if (detail.job.status === "passed") return 0
@@ -64,8 +78,15 @@ export const runFlow = (
 export const runStatus = (
   context: CliContext,
   command: StatusCommand,
-): Effect.Effect<number, ApiError> =>
+): Effect.Effect<number, ApiError | RuntimeError> =>
   Effect.gen(function* () {
+    if (command.wait) {
+      const detail = yield* context.client.getJob(command.jobId)
+      yield* writeStderr(
+        `job ${detail.job.id} is ${detail.job.status} — attaching to log stream\n`,
+      )
+      return yield* tailUntilDone(context, command.jobId)
+    }
     const detail = yield* context.client.getJob(command.jobId)
     yield* writeStdout(command.json ? formatJson(detail) : formatJobStatus(detail))
     return 0

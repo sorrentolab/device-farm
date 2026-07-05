@@ -401,6 +401,7 @@ const parseStatus = (args: readonly string[]): CliCommand => {
 
   let jobId: string | undefined
   let json = false
+  let wait = false
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index] ?? ""
@@ -411,14 +412,21 @@ const parseStatus = (args: readonly string[]): CliCommand => {
     }
 
     const flag = parseFlag(arg, "status")
-    if (flag.name !== "--json") failUsage(`unknown option '${flag.name}'`, "status")
-    if (flag.value !== undefined) failUsage("--json does not take a value", "status")
-    json = true
+    if (flag.name === "--json") {
+      if (flag.value !== undefined) failUsage("--json does not take a value", "status")
+      json = true
+    } else if (flag.name === "--wait") {
+      if (flag.value !== undefined) failUsage("--wait does not take a value", "status")
+      wait = true
+    } else {
+      failUsage(`unknown option '${flag.name}'`, "status")
+    }
   }
 
+  if (json && wait) failUsage("--json and --wait cannot be combined", "status")
   const requiredJobId = jobId ?? failUsage("status requires <jobId>", "status")
 
-  return { _tag: "Status", jobId: requiredJobId, json }
+  return { _tag: "Status", jobId: requiredJobId, json, wait }
 }
 
 const parseCancel = (args: readonly string[]): CliCommand => {

@@ -81,6 +81,7 @@ export type StatusCommand = {
   readonly _tag: "Status"
   readonly jobId: string
   readonly json: boolean
+  readonly wait: boolean
 }
 
 export type CancelCommand = {

@@ -17,9 +17,9 @@ Setup: install the CLI with `cd ~/projects/sorrentolab/device-farm && mise run c
 dfarm run flow.yaml --platform ios --app /abs/path/MyApp.app --env BASE_URL=http://localhost:8080 --wait
 ```
 
-Behaves like `maestro test`: streams the flow's log to stdout, exit code 0 iff the flow passed. The farm picks any compatible device; pin one with `--device <udid>` or narrow with `--kind simulator --os-min 17.0 --name "iPhone 16"`. If the device dies mid-run the farm retries on another one (up to `--max-attempts`, default 3) — your command just keeps streaming.
+Behaves like `maestro test`: streams the flow's log to stdout, exit code 0 iff the flow passed. The farm picks any compatible device; pin one with `--device <udid>` or narrow with `--kind simulator --os-min 17.0 --name "iPhone 16"`. `--name` is an exact (case-insensitive) match — "iPhone 17" will never grab an "iPhone 17 Pro"; use `*` wildcards ("iPhone 17*") or `/regex/` when you really want a pattern. If the device dies mid-run the farm retries on another one (up to `--max-attempts`, default 3) — your command just keeps streaming.
 
-Without `--wait` it prints a job id; check later with `dfarm status <jobId>`.
+Without `--wait` it prints a job id; check later with `dfarm status <jobId>`. `dfarm status <jobId> --wait` attaches to the live log stream and exits with the run's code — it's also the recovery move if a `run --wait` stream ever drops: nothing is lost, the full log replays.
 
 ## Look at a device (visual checks, manual poking)
 

@@ -14,6 +14,11 @@ export const compareDottedVersions = (left: string, right: string): number => {
   return 0
 }
 
+/**
+ * Device-name matching: exact (case-insensitive) by default so "iPhone 17"
+ * can never grab an "iPhone 17 Pro Max". Explicit patterns only:
+ * `*` wildcards ("iPhone 17*") or /regex/.
+ */
 export const nameMatches = (name: string, pattern: string | undefined): boolean => {
   if (!pattern) return true
   if (pattern.startsWith("/") && pattern.endsWith("/") && pattern.length > 2) {
@@ -23,7 +28,14 @@ export const nameMatches = (name: string, pattern: string | undefined): boolean 
       return false
     }
   }
-  return name.toLowerCase().includes(pattern.toLowerCase())
+  if (pattern.includes("*")) {
+    const source = pattern
+      .split("*")
+      .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+      .join(".*")
+    return new RegExp(`^${source}$`, "i").test(name)
+  }
+  return name.toLowerCase() === pattern.toLowerCase()
 }
 
 export const randomToken = () => {

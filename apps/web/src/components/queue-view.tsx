@@ -11,7 +11,7 @@ export const describeRequirements = (r: DeviceRequirements): string => {
     r.kind,
     r.osMin && `≥${r.osMin}`,
     r.osMax && `≤${r.osMax}`,
-    r.namePattern && `name~${r.namePattern}`,
+    r.namePattern && `name=${r.namePattern}`,
     r.deviceUdid && `device=${r.deviceUdid.slice(0, 12)}`,
   ].filter(Boolean)
   return parts.length ? parts.join(" · ") : "any device"
