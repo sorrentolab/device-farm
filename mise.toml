@@ -50,11 +50,11 @@ run = "bunx drizzle-kit migrate"
 [tasks.typecheck]
 description = "Typecheck all workspaces"
 run = [
-  "bun x tsc -p packages/shared --noEmit",
-  "bun x tsc -p apps/agent --noEmit",
-  "bun x tsc -p packages/cli --noEmit",
-  "bun x tsc -p apps/web --noEmit",
-  "bun x tsc -p e2e --noEmit",
+  "packages/shared/node_modules/.bin/tsc -p packages/shared --noEmit",
+  "apps/agent/node_modules/.bin/tsc -p apps/agent --noEmit",
+  "packages/cli/node_modules/.bin/tsc -p packages/cli --noEmit",
+  "apps/web/node_modules/.bin/tsc -p apps/web --noEmit",
+  "e2e/node_modules/.bin/tsc -p e2e --noEmit",
 ]
 
 [tasks.lint]
