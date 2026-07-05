@@ -47,9 +47,10 @@ Scheduling is a single Postgres transaction (`FOR UPDATE SKIP LOCKED` + lease in
 
 `ops/` has both supervision options; pick one.
 
-**pm2** (simplest):
+**pm2** (simplest — `mise run boot` does all of this):
 
 ```sh
+mise run web:build        # next start serves the last build; don't skip after pulling changes
 pm2 start ops/pm2.config.cjs && pm2 save
 ```
 

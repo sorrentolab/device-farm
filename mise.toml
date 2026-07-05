@@ -70,9 +70,14 @@ run = "bun run e2e/setup/run.ts {{arg(name='scenario', default='')}}"
 description = "Bring up dev infra at boot (used by launchd/pm2 setups)"
 run = "docker compose -f docker-compose.dev.yml up -d --wait"
 
+[tasks."web:build"]
+description = "Production build of the web app (required before next start / pm2)"
+dir = "apps/web"
+run = "./node_modules/.bin/next build"
+
 [tasks.boot]
-description = "Start everything supervised: infra + pm2 web/agent"
-depends = ["boot:infra"]
+description = "Start everything supervised: infra + fresh web build + pm2 web/agent"
+depends = ["boot:infra", "web:build", "db:migrate"]
 run = "pm2 start ops/pm2.config.cjs"
 
 [tasks."cli:build"]

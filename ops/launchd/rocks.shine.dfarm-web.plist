@@ -16,6 +16,8 @@
     <key>DATABASE_URL</key><string>postgres://dfarm:dfarm@localhost:5442/dfarm</string>
     <key>INNGEST_DEV</key><string>1</string>
     <key>INNGEST_BASE_URL</key><string>http://localhost:8288</string>
+    <key>INNGEST_SERVE_HOST</key><string>http://host.docker.internal:3100</string>
+    <key>DFARM_ARTIFACTS_DIR</key><string>/tmp/dfarm-artifacts</string>
   </dict>
   <key>StandardOutPath</key><string>/tmp/dfarm-web.log</string>
   <key>StandardErrorPath</key><string>/tmp/dfarm-web.log</string>

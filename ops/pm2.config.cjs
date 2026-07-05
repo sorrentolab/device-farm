@@ -13,6 +13,8 @@ module.exports = {
         DATABASE_URL: "postgres://dfarm:dfarm@localhost:5442/dfarm",
         INNGEST_DEV: "1",
         INNGEST_BASE_URL: "http://localhost:8288",
+        // dockerized inngest dev server reaches this host-side app through this URL
+        INNGEST_SERVE_HOST: "http://host.docker.internal:3100",
         DFARM_ARTIFACTS_DIR: `${repo}/.artifacts`,
       },
       max_restarts: 10,
