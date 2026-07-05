@@ -35,6 +35,7 @@ While reserved, the device is yours alone — jobs queue behind you, so keep TTL
 ## Everything else
 
 - `dfarm devices` — what exists and who holds it
+- `dfarm reset <udid>` — device UI stuck? kills every app and returns to the home screen. `--hard` reboots the OS. Refused while a job runs on it; `--force` overrides (the job is not canceled and will likely fail — own that choice)
 - `dfarm cancel <jobId>`
 - Dashboard (live screens, queue, history): http://localhost:3100
 - Same operations over plain REST if you can't shell out: `POST $DFARM_URL/api/jobs`, `GET /api/devices`, … (see `packages/shared/src/client.ts` in the farm repo for the full surface)

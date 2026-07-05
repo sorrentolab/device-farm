@@ -17,6 +17,7 @@ export abstract class DeviceControlService {
   abstract capture(udid: string): Promise<CaptureResult>
   abstract exec(request: AgentExecRequest): Promise<ExecResult>
   abstract boot(udid: string): Promise<void>
+  abstract reset(udid: string, mode: "soft" | "hard"): Promise<void>
   abstract prepareRun(request: AgentRunRequest): Promise<CommandResult | undefined>
 }
 
@@ -64,6 +65,55 @@ export class RealDeviceControlService extends DeviceControlService {
       }
       await this.discovery.refresh()
       return
+    }
+  }
+
+  async reset(udid: string, mode: "soft" | "hard"): Promise<void> {
+    const device = this.requireDevice(udid)
+
+    if (mode === "hard") {
+      if (device.platform === "ios" && device.kind === "simulator") {
+        await this.runner.collectText(["xcrun", "simctl", "shutdown", udid])
+        await this.boot(udid)
+        return
+      }
+      if (device.platform === "ios") {
+        const reboot = await this.runner.collectText(["xcrun", "devicectl", "device", "reboot", "--device", udid])
+        if (reboot.exitCode !== 0) {
+          throw new Error(reboot.stderr.trim() || `devicectl reboot failed with ${reboot.exitCode}`)
+        }
+        return
+      }
+      // android emulator or physical: fire the reboot; discovery re-sees it when it's back
+      const reboot = await this.runner.collectText(["adb", "-s", udid, "reboot"])
+      if (reboot.exitCode !== 0) {
+        throw new Error(reboot.stderr.trim() || `adb reboot failed with ${reboot.exitCode}`)
+      }
+      return
+    }
+
+    // soft: kill every user app, land on the home screen; device stays booted
+    if (device.platform === "ios" && device.kind === "simulator") {
+      const kick = await this.runner.collectText([
+        "xcrun", "simctl", "spawn", udid,
+        "launchctl", "kickstart", "-k", "system/com.apple.SpringBoard",
+      ])
+      if (kick.exitCode !== 0) {
+        throw new Error(kick.stderr.trim() || `SpringBoard restart failed with ${kick.exitCode}`)
+      }
+      return
+    }
+    if (device.platform === "ios") {
+      throw new Error("soft reset is not supported on physical iOS devices — use hard reset (reboot)")
+    }
+    const home = await this.runner.collectText(["adb", "-s", udid, "shell", "input", "keyevent", "KEYCODE_HOME"])
+    if (home.exitCode !== 0) {
+      throw new Error(home.stderr.trim() || `adb HOME keyevent failed with ${home.exitCode}`)
+    }
+    const pkgs = await this.runner.collectText(["adb", "-s", udid, "shell", "pm", "list", "packages", "-3"])
+    for (const line of pkgs.stdout.split(/\r?\n/)) {
+      const pkg = line.replace(/^package:/, "").trim()
+      if (pkg) await this.runner.collectText(["adb", "-s", udid, "shell", "am", "force-stop", pkg])
     }
   }
 
@@ -218,6 +268,15 @@ export class StubDeviceControlService extends DeviceControlService {
 
   async boot(udid: string): Promise<void> {
     this.discovery.boot(udid)
+  }
+
+  async reset(udid: string, mode: "soft" | "hard"): Promise<void> {
+    if (!this.discovery.has(udid)) throw new Error(`device ${udid} is disconnected`)
+    if (mode === "hard") {
+      // Simulate a reboot: vanish from discovery briefly, then come back booted.
+      this.discovery.disconnect(udid)
+      setTimeout(() => this.discovery.reconnect(udid), 4_000)
+    }
   }
 
   async prepareRun(request: AgentRunRequest): Promise<CommandResult | undefined> {

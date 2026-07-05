@@ -22,6 +22,12 @@ export const api = {
   cancelJob: (id: string) => req(`/api/jobs/${id}`, { method: "DELETE" }),
   boot: (deviceId: string) =>
     req<{ ok: boolean }>(`/api/devices/${deviceId}/boot`, { method: "POST" }),
+  resetDevice: (deviceId: string, mode: "soft" | "hard" = "soft") =>
+    req<{ ok: boolean }>(`/api/devices/${deviceId}/reset`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ mode }),
+    }),
   setWatched: (deviceId: string, watched: boolean) =>
     req(`/api/devices/${deviceId}/watch`, {
       method: "POST",

@@ -107,6 +107,9 @@ export const agentClient = {
 
   boot: (target: AgentTarget) =>
     postJson(target, "/boot", AgentBootRequest.make({ udid: target.udid })).pipe(Effect.asVoid),
+
+  reset: (target: AgentTarget, mode: "soft" | "hard") =>
+    postJson(target, "/reset", { udid: target.udid, mode }).pipe(Effect.asVoid),
 }
 
 export class AgentClient extends Effect.Service<AgentClient>()("AgentClient", {

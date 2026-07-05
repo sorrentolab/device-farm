@@ -5,6 +5,7 @@ import * as Effect from "effect/Effect"
 import { parseArgs } from "./args.js"
 import { runDevices } from "./commands/devices.js"
 import { runDocs } from "./commands/docs.js"
+import { runReset } from "./commands/reset.js"
 import { runCancel, runFlow, runStatus } from "./commands/jobs.js"
 import {
   runExec,
@@ -30,6 +31,8 @@ const dispatch = (
       )
     case "Docs":
       return runDocs()
+    case "Reset":
+      return runReset(context, command)
     case "Devices":
       return runDevices(context, command)
     case "Run":

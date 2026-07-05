@@ -74,6 +74,10 @@ export class DfarmClient {
   setWatched = (deviceId: string, watched: boolean) =>
     request(this.baseUrl, `/api/devices/${deviceId}/watch`, post({ watched }))
 
+  /** 409 if a job holds the device and force is not set. */
+  resetDevice = (deviceId: string, opts?: { mode?: "soft" | "hard"; force?: boolean }) =>
+    request(this.baseUrl, `/api/devices/${deviceId}/reset`, post(opts ?? {}))
+
   // -- jobs --
   submitJob = (req: typeof JobSubmitRequest.Encoded) =>
     request(this.baseUrl, "/api/jobs", post(req)).pipe(Effect.flatMap(json(Job)))

@@ -11,6 +11,7 @@ export type RequirementsInput = {
 
 export type HelpTopic =
   | "docs"
+  | "reset"
   | "devices"
   | "run"
   | "reserve"
@@ -91,6 +92,13 @@ export type DocsCommand = {
   readonly _tag: "Docs"
 }
 
+export type ResetCommand = {
+  readonly _tag: "Reset"
+  readonly udid: string
+  readonly mode: "soft" | "hard"
+  readonly force: boolean
+}
+
 export type CliCommand =
   | HelpCommand
   | DevicesCommand
@@ -103,3 +111,4 @@ export type CliCommand =
   | StatusCommand
   | CancelCommand
   | DocsCommand
+  | ResetCommand

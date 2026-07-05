@@ -5,7 +5,7 @@ import { effectify } from "@/server/effect"
 import { mapDevice } from "@/server/mappers"
 import { realtimeHub } from "@/server/realtime"
 import type { AgentReport, AgentReportResponse, Device } from "@dfarm/shared"
-import { and, asc, eq, gt, isNull, lt, ne, notInArray } from "drizzle-orm"
+import { and, asc, eq, gt, isNull, lt, ne, notInArray, or } from "drizzle-orm"
 import * as Effect from "effect/Effect"
 
 const activeLeasePredicate = () => gt(leases.expiresAt, new Date())
@@ -96,6 +96,15 @@ export const deviceRepo = {
       return row ?? null
     }),
 
+  /** Open a deliberate-reset window during which discovery blips are not device losses. */
+  markResetting: (id: string, until: Date) =>
+    effectify(async () => {
+      await getDb()
+        .update(devices)
+        .set({ resettingUntil: until, updatedAt: new Date() })
+        .where(eq(devices.id, id))
+    }),
+
   getByUdid: (udid: string) =>
     effectify(async () => {
       const [row] = await getDb().select().from(devices).where(eq(devices.udid, udid)).limit(1)
@@ -163,6 +172,8 @@ export const deviceRepo = {
                 lastHeartbeatAt: now,
                 // a retired device that reappears in discovery comes back to life
                 retiredAt: null,
+                // reappearing also ends any deliberate-reset window
+                resettingUntil: null,
                 updatedAt: now,
               },
             })
@@ -182,14 +193,18 @@ export const deviceRepo = {
           }
         }
 
+        // A device mid-hard-reset is expected to vanish from discovery briefly;
+        // don't treat that as a loss.
+        const notResetting = or(isNull(devices.resettingUntil), lt(devices.resettingUntil, now))
         const missingWhere =
           seenUdids.length > 0
             ? and(
                 eq(devices.agentHost, report.agentHost),
                 ne(devices.status, "offline"),
+                notResetting,
                 notInArray(devices.udid, seenUdids),
               )
-            : and(eq(devices.agentHost, report.agentHost), ne(devices.status, "offline"))
+            : and(eq(devices.agentHost, report.agentHost), ne(devices.status, "offline"), notResetting)
 
         const missing = await tx.select().from(devices).where(missingWhere)
         for (const device of missing) {

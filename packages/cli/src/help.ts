@@ -12,6 +12,12 @@ const entries: Record<HelpTopic, HelpEntry> = {
     description: "Print the full usage guide for coding agents (what the farm is, how to run flows, reserve devices, and the rules).",
     example: "dfarm docs",
   },
+  reset: {
+    usage: "dfarm reset <udid> [--hard] [--force]",
+    description:
+      "Reset a stuck device: kill all apps and return to the home screen. --hard reboots the OS. Refused while a job holds the device unless --force (the job is not canceled).",
+    example: "dfarm reset 276E331B-2A51-4322-8F6E-B40ED1A80279 --hard",
+  },
   devices: {
     usage: "dfarm devices [--json]",
     description: "List known devices.",
@@ -64,6 +70,7 @@ const entries: Record<HelpTopic, HelpEntry> = {
 const commandRows: readonly [HelpTopic, string][] = [
   ["docs", "Print the agent usage guide"],
   ["devices", "List devices"],
+  ["reset", "Reset a stuck device"],
   ["run", "Submit a maestro flow"],
   ["reserve", "Reserve a device"],
   ["shot", "Capture a reservation screenshot"],

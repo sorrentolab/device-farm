@@ -1,0 +1,1 @@
+ALTER TABLE "devices" ADD COLUMN "resetting_until" timestamp with time zone;

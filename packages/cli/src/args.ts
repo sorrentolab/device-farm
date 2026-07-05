@@ -5,6 +5,7 @@ import type { CliCommand, HelpTopic, RequirementsInput } from "./types.js"
 
 const commandTopics: readonly HelpTopic[] = [
   "docs",
+  "reset",
   "devices",
   "run",
   "reserve",
@@ -53,6 +54,8 @@ const parseArgsUnsafe = (argv: readonly string[]): CliCommand => {
   switch (topic) {
     case "docs":
       return parseDocs(args)
+    case "reset":
+      return parseReset(args)
     case "devices":
       return parseDevices(args)
     case "run":
@@ -89,6 +92,28 @@ const parseDocs = (args: readonly string[]): CliCommand => {
   if (hasHelp(args)) return { _tag: "Help", topic: "docs" }
   if (args.length > 0) failUsage(`docs takes no arguments`, "docs")
   return { _tag: "Docs" }
+}
+
+const parseReset = (args: readonly string[]): CliCommand => {
+  if (hasHelp(args)) return { _tag: "Help", topic: "reset" }
+  let udid: string | undefined
+  let mode: "soft" | "hard" = "soft"
+  let force = false
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index] ?? ""
+    if (!arg.startsWith("--")) {
+      if (udid) failUsage("reset takes exactly one device udid", "reset")
+      udid = arg
+      continue
+    }
+    const flag = parseFlag(arg, "reset")
+    if (flag.name === "--hard") mode = "hard"
+    else if (flag.name === "--force") force = true
+    else failUsage(`unknown option '${flag.name}'`, "reset")
+    if (flag.value !== undefined) failUsage(`${flag.name} does not take a value`, "reset")
+  }
+  const requiredUdid = udid ?? failUsage("reset requires a device udid", "reset")
+  return { _tag: "Reset", udid: requiredUdid, mode, force }
 }
 
 const parseDevices = (args: readonly string[]): CliCommand => {
@@ -441,6 +466,7 @@ const readFlagValue = (
 const parseTopic = (value: string, label: "command" | "help topic"): HelpTopic => {
   switch (value) {
     case "docs":
+    case "reset":
     case "devices":
     case "run":
     case "reserve":

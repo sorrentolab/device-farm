@@ -47,8 +47,22 @@ function RowActions({ device }: { device: Device }) {
     )
   }
 
+  const jobHeld = device.currentLeaseKind === "job"
+
   return (
     <div className="flex justify-end gap-1.5">
+      {!jobHeld && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-2 text-xs text-muted-foreground"
+          disabled={busy}
+          onClick={act(() => api.resetDevice(device.id))}
+          title="Kill all apps and return to the home screen (soft reset)"
+        >
+          reset
+        </Button>
+      )}
       <Button
         variant="outline"
         size="sm"

@@ -1,5 +1,6 @@
 import {
   AgentBootRequest,
+  AgentResetRequest,
   AgentCancelRequest,
   AgentExecRequest,
   AgentRunRequest,
@@ -99,6 +100,11 @@ export class CommandServer {
           const body = await decodeBody(request, AgentBootRequest)
           await this.deviceControl.boot(body.udid)
           return json({ booted: true })
+        }
+        case "/reset": {
+          const body = await decodeBody(request, AgentResetRequest)
+          await this.deviceControl.reset(body.udid, body.mode)
+          return json({ reset: true, mode: body.mode })
         }
         case "/stub": {
           if (!this.config.stub || !this.stubDiscovery) return json({ error: "not found" }, { status: 404 })

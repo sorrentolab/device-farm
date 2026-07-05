@@ -95,6 +95,17 @@ export type AgentExecRequest = typeof AgentExecRequest.Type
 export const AgentBootRequest = Schema.Struct({ udid: Schema.String })
 export type AgentBootRequest = typeof AgentBootRequest.Type
 
+/**
+ * soft = kill every user app and land on the home screen (SpringBoard restart
+ * on iOS sims, HOME + force-stop on Android); device stays booted.
+ * hard = reboot the OS (shutdown+boot / adb reboot / devicectl reboot).
+ */
+export const AgentResetRequest = Schema.Struct({
+  udid: Schema.String,
+  mode: Schema.optionalWith(Schema.Literal("soft", "hard"), { default: () => "soft" as const }),
+})
+export type AgentResetRequest = typeof AgentResetRequest.Type
+
 /** Commands the /exec allow-list accepts (first argv element). */
 export const EXEC_ALLOW_LIST = [
   "adb",
