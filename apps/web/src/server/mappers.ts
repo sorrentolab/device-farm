@@ -47,6 +47,7 @@ export const mapJob = (row: JobRow): Job => ({
           appPath: (row.payload as RunFlowPayload).appPath,
           appBundleId: (row.payload as RunFlowPayload).appBundleId,
           env: (row.payload as RunFlowPayload).env ?? {},
+          recordVideo: (row.payload as RunFlowPayload).recordVideo ?? false,
         } satisfies RunFlowPayload),
   createdBy: row.createdBy,
   attempt: row.attempt,

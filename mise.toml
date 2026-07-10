@@ -10,6 +10,8 @@ DFARM_AGENT_URL = "http://localhost:4700"
 DFARM_AGENT_PORT = "4700"
 DFARM_AGENT_HOST = "local-mac"
 DFARM_ARTIFACTS_DIR = "{{config_root}}/.artifacts"
+# run artifacts (logs, screenshots, recordings) older than this are deleted by the daily retention cron
+DFARM_ARTIFACT_RETENTION_DAYS = "14"
 INNGEST_DEV = "1"
 INNGEST_BASE_URL = "http://localhost:8288"
 # dockerized inngest dev server calls the host-side web app through this URL

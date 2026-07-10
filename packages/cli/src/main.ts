@@ -3,6 +3,7 @@
 import { ApiError } from "@dfarm/shared"
 import * as Effect from "effect/Effect"
 import { parseArgs } from "./args.js"
+import { runArtifacts } from "./commands/artifacts.js"
 import { runDevices } from "./commands/devices.js"
 import { runDocs } from "./commands/docs.js"
 import { runReset } from "./commands/reset.js"
@@ -49,6 +50,8 @@ const dispatch = (
       return runRelease(context, command)
     case "Status":
       return runStatus(context, command)
+    case "Artifacts":
+      return runArtifacts(context, command)
     case "Cancel":
       return runCancel(context, command)
   }

@@ -19,6 +19,8 @@ dfarm run flow.yaml --platform ios --app /abs/path/MyApp.app --env BASE_URL=http
 
 Behaves like `maestro test`: streams the flow's log to stdout, exit code 0 iff the flow passed. The farm picks any compatible device; pin one with `--device <udid>` or narrow with `--kind simulator --os-min 17.0 --name "iPhone 16"`. `--name` is an exact (case-insensitive) match — "iPhone 17" will never grab an "iPhone 17 Pro"; use `*` wildcards ("iPhone 17*") or `/regex/` when you really want a pattern. If the device dies mid-run the farm retries on another one (up to `--max-attempts`, default 3) — your command just keeps streaming.
 
+Pass `--record` to record the device screen during the flow; the video lands in the run's artifacts. Download the latest run's logs, screenshots, and recording with `dfarm artifacts <jobId>`, or select a retry with `--attempt N` and a destination with `--out DIR`. Artifacts are kept for 14 days (`DFARM_ARTIFACT_RETENTION_DAYS`), then deleted — download anything you want to keep.
+
 Without `--wait` it prints a job id; check later with `dfarm status <jobId>`. `dfarm status <jobId> --wait` attaches to the live log stream and exits with the run's code — it's also the recovery move if a `run --wait` stream ever drops: nothing is lost, the full log replays.
 
 ## Look at a device (visual checks, manual poking)

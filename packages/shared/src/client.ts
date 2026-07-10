@@ -9,8 +9,11 @@ import {
   JobDetail,
   JobList,
   JobSubmitRequest,
+  PruneArtifactsRequest,
+  PruneArtifactsResult,
   Reservation,
   ReservationCreateRequest,
+  RunArtifactList,
 } from "./api"
 import { Job } from "./domain"
 import { ApiError } from "./errors"
@@ -120,6 +123,26 @@ export class DfarmClient {
       ),
     )
 
+  // -- runs --
+  listRunArtifacts = (runId: string) =>
+    request(this.baseUrl, `/api/runs/${runId}/artifacts`).pipe(
+      Effect.flatMap(json(RunArtifactList)),
+    )
+
+  downloadRunArtifact = (runId: string, filePath: string) =>
+    request(
+      this.baseUrl,
+      `/api/runs/${runId}/artifacts/${filePath.split("/").map(encodeURIComponent).join("/")}`,
+    ).pipe(
+      Effect.flatMap((res) =>
+        Effect.tryPromise({
+          try: () => res.arrayBuffer(),
+          catch: (e) => new ApiError({ status: 0, message: String(e) }),
+        }),
+      ),
+      Effect.map((buf) => new Uint8Array(buf)),
+    )
+
   // -- reservations --
   createReservation = (req: typeof ReservationCreateRequest.Encoded) =>
     request(this.baseUrl, "/api/reservations", post(req)).pipe(
@@ -159,6 +182,11 @@ export class DfarmClient {
 
   e2eStub = (cmd: typeof StubCommand.Encoded) =>
     request(this.baseUrl, "/api/e2e/stub", post(cmd))
+
+  e2ePruneArtifacts = (req: typeof PruneArtifactsRequest.Encoded = {}) =>
+    request(this.baseUrl, "/api/e2e/prune-artifacts", post(req)).pipe(
+      Effect.flatMap(json(PruneArtifactsResult)),
+    )
 }
 
 export const clientFromEnv = (): DfarmClient => {

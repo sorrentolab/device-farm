@@ -18,6 +18,11 @@ export type CaptureResult = {
   readonly contentType: "image/jpeg" | "image/png"
 }
 
+export type RecordingHandle = {
+  /** Finalize the recorder and land the video file(s) in the artifacts dir. Idempotent callers only. */
+  readonly stop: () => Promise<void>
+}
+
 export type CommandOutput = {
   readonly exitCode: number
   readonly stdout: Uint8Array

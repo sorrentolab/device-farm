@@ -1,4 +1,6 @@
 import * as Effect from "effect/Effect"
+import { mkdir, writeFile } from "node:fs/promises"
+import { dirname } from "node:path"
 import { RuntimeError } from "./errors.js"
 
 export const writeStdout = (text: string): Effect.Effect<void> =>
@@ -23,6 +25,21 @@ export const writeFileBytes = (
   Effect.tryPromise({
     try: async () => {
       await Bun.write(path, bytes)
+    },
+    catch: (error) =>
+      new RuntimeError({
+        message: `failed to write ${path}: ${formatUnknownError(error)}`,
+      }),
+  })
+
+export const writeFileBytesWithParents = (
+  path: string,
+  bytes: Uint8Array,
+): Effect.Effect<void, RuntimeError> =>
+  Effect.tryPromise({
+    try: async () => {
+      await mkdir(dirname(path), { recursive: true })
+      await writeFile(path, bytes)
     },
     catch: (error) =>
       new RuntimeError({

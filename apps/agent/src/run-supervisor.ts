@@ -7,7 +7,7 @@ import { DiscoveryService } from "./discovery.js"
 import { AgentLogger } from "./logger.js"
 import { linesFromStream, ProcessRunner } from "./process.js"
 import { makeStubPng } from "./png.js"
-import type { AgentConfig } from "./types.js"
+import type { AgentConfig, RecordingHandle } from "./types.js"
 
 type StubRunConfig = {
   readonly durationMs: number
@@ -21,6 +21,7 @@ type ActiveRunState = {
   readonly eventQueue: RunEvent[]
   flushTimer: Timer | undefined
   process: Bun.ReadableSubprocess | undefined
+  recording: RecordingHandle | undefined
   completed: boolean
   sawDeviceLoss: boolean
   infraReason: string | undefined
@@ -95,6 +96,7 @@ export class RunSupervisor {
         void this.flush(state)
       }, 500),
       process: undefined,
+      recording: undefined,
       completed: false,
       sawDeviceLoss: false,
       infraReason: undefined,
@@ -111,6 +113,7 @@ export class RunSupervisor {
     if (!state) return false
     state.completed = true
     state.kill()
+    void this.stopRecording(state)
     this.cleanup(state)
     return true
   }
@@ -138,6 +141,9 @@ export class RunSupervisor {
         await this.completeExit(state, prepare.exitCode)
         return
       }
+
+      await this.startRecordingIfRequested(state)
+      if (state.completed) return
 
       const envFlags = Object.entries(state.request.env).flatMap(([key, value]) => [
         "--env",
@@ -210,6 +216,9 @@ export class RunSupervisor {
         return
       }
 
+      await this.startRecordingIfRequested(state)
+      if (state.completed) return
+
       const infra = runConfig.failureKind === "infra"
       const lines = [
         `maestro: starting run ${state.request.runId} on ${state.request.udid}`,
@@ -258,9 +267,49 @@ export class RunSupervisor {
     state.eventQueue.push(event)
   }
 
+  private async startRecordingIfRequested(state: ActiveRunState): Promise<void> {
+    if (!state.request.recordVideo) return
+    try {
+      state.recording = await this.deviceControl.startRecording(
+        state.request.udid,
+        state.artifactsDir,
+      )
+      if (!state.recording) {
+        this.enqueue(state, {
+          type: "log",
+          line: "agent: video recording is not supported on this device; continuing without it",
+          at: now(),
+        })
+      }
+    } catch (error) {
+      this.enqueue(state, {
+        type: "log",
+        line: `agent: failed to start video recording: ${String(error)}`,
+        at: now(),
+      })
+    }
+  }
+
+  /**
+   * Finalize the recorder before the terminal event goes out, so the video is
+   * in the artifacts dir by the time the run is reported finished. Bounded so
+   * a hung adb/simctl can never stall run completion.
+   */
+  private async stopRecording(state: ActiveRunState): Promise<void> {
+    const recording = state.recording
+    if (!recording) return
+    state.recording = undefined
+    try {
+      await Promise.race([recording.stop(), sleep(15_000)])
+    } catch (error) {
+      this.logger.warn(`failed to stop recording for run ${state.request.runId}`, String(error))
+    }
+  }
+
   private async completeExit(state: ActiveRunState, exitCode: number): Promise<void> {
     if (state.completed) return
     state.completed = true
+    await this.stopRecording(state)
     this.enqueue(state, { type: "exit", exitCode, artifactsDir: state.artifactsDir, at: now() })
     await this.flush(state)
     this.cleanup(state)
@@ -270,6 +319,7 @@ export class RunSupervisor {
     if (state.completed) return
     state.completed = true
     state.process?.kill("SIGTERM")
+    await this.stopRecording(state)
     this.enqueue(state, { type: "infra_failure", message, at: now() })
     await this.flush(state)
     this.cleanup(state)
@@ -279,6 +329,7 @@ export class RunSupervisor {
     if (state.completed) return
     state.completed = true
     state.process?.kill("SIGTERM")
+    await this.stopRecording(state)
     this.enqueue(state, { type: "device_lost", message, at: now() })
     await this.flush(state)
     this.cleanup(state)

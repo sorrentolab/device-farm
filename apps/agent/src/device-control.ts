@@ -4,14 +4,14 @@ import type {
   DiscoveredDevice,
   ExecResult,
 } from "@dfarm/shared"
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { StubDiscoveryService, type DiscoveryService } from "./discovery.js"
 import { AgentLogger } from "./logger.js"
 import { ProcessRunner } from "./process.js"
-import { makeStubPng } from "./png.js"
-import type { AgentConfig, CaptureResult, CommandResult } from "./types.js"
+import { makeStubMp4, makeStubPng } from "./png.js"
+import type { AgentConfig, CaptureResult, CommandResult, RecordingHandle } from "./types.js"
 
 export abstract class DeviceControlService {
   abstract capture(udid: string): Promise<CaptureResult>
@@ -19,6 +19,8 @@ export abstract class DeviceControlService {
   abstract boot(udid: string): Promise<void>
   abstract reset(udid: string, mode: "soft" | "hard"): Promise<void>
   abstract prepareRun(request: AgentRunRequest): Promise<CommandResult | undefined>
+  /** Start a screen recording that lands in artifactsDir; undefined = unsupported on this device. */
+  abstract startRecording(udid: string, artifactsDir: string): Promise<RecordingHandle | undefined>
 }
 
 export class RealDeviceControlService extends DeviceControlService {
@@ -130,6 +132,105 @@ export class RealDeviceControlService extends DeviceControlService {
     }
 
     return undefined
+  }
+
+  async startRecording(udid: string, artifactsDir: string): Promise<RecordingHandle | undefined> {
+    const device = this.requireDevice(udid)
+    if (device.platform === "ios") {
+      // No scriptable recorder for physical iOS devices.
+      if (device.kind !== "simulator") return undefined
+      return this.startIosSimulatorRecording(udid, artifactsDir)
+    }
+    return this.startAndroidRecording(udid, artifactsDir)
+  }
+
+  private startIosSimulatorRecording(udid: string, artifactsDir: string): RecordingHandle {
+    const proc = this.runner.spawn([
+      "xcrun",
+      "simctl",
+      "io",
+      udid,
+      "recordVideo",
+      "--codec=h264",
+      "--force",
+      join(artifactsDir, "recording.mp4"),
+    ])
+    return {
+      stop: async () => {
+        // SIGINT is what finalizes the mp4 (writes the moov atom); SIGKILL would corrupt it.
+        proc.kill("SIGINT")
+        const timeout = setTimeout(() => proc.kill("SIGKILL"), 10_000)
+        await proc.exited
+        clearTimeout(timeout)
+      },
+    }
+  }
+
+  /**
+   * `adb shell screenrecord` hard-caps segments at 3 minutes, so record
+   * back-to-back segments on the device and pull them on stop. A single
+   * segment lands as recording.mp4; longer runs get recording-01.mp4, ….
+   */
+  private startAndroidRecording(udid: string, artifactsDir: string): RecordingHandle {
+    const remotePrefix = `/sdcard/dfarm-rec-${Date.now()}`
+    const maxSegments = 40 // ~2h cap
+    let stopped = false
+    let current: Bun.ReadableSubprocess | undefined
+    let segments = 0
+
+    const loop = (async () => {
+      for (let segment = 1; segment <= maxSegments && !stopped; segment += 1) {
+        const proc = this.runner.spawn([
+          "adb",
+          "-s",
+          udid,
+          "shell",
+          "screenrecord",
+          "--time-limit",
+          "180",
+          `${remotePrefix}-${segment}.mp4`,
+        ])
+        current = proc
+        const exitCode = await proc.exited
+        if (exitCode === 0 || stopped) {
+          segments = segment
+          continue
+        }
+        this.logger.warnOnce(
+          `android:screenrecord:${udid}`,
+          `screenrecord failed on ${udid}; recording stops at segment ${segment - 1}`,
+          `exit ${exitCode}`,
+        )
+        break
+      }
+    })()
+
+    return {
+      stop: async () => {
+        stopped = true
+        // screenrecord finalizes its file on SIGINT; killing the local adb client does not reach it.
+        await this.runner
+          .collectText(["adb", "-s", udid, "shell", "pkill", "-2", "screenrecord"])
+          .catch(() => undefined)
+        const timeout = setTimeout(() => current?.kill("SIGKILL"), 5_000)
+        await loop
+        clearTimeout(timeout)
+        // screenrecord can exit slightly before the file is fully flushed on device
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        for (let segment = 1; segment <= segments; segment += 1) {
+          const remote = `${remotePrefix}-${segment}.mp4`
+          const local = join(
+            artifactsDir,
+            segments === 1 ? "recording.mp4" : `recording-${String(segment).padStart(2, "0")}.mp4`,
+          )
+          const pull = await this.runner.collectText(["adb", "-s", udid, "pull", remote, local])
+          if (pull.exitCode !== 0) {
+            this.logger.warn(`failed to pull ${remote} from ${udid}`, pull.stderr.trim())
+          }
+          await this.runner.collectText(["adb", "-s", udid, "shell", "rm", "-f", remote])
+        }
+      },
+    }
   }
 
   private requireDevice(udid: string): DiscoveredDevice {
@@ -289,5 +390,14 @@ export class StubDeviceControlService extends DeviceControlService {
     }
     await mkdir(join(this.config.artifactsDir, request.runId), { recursive: true })
     return undefined
+  }
+
+  async startRecording(udid: string, artifactsDir: string): Promise<RecordingHandle | undefined> {
+    if (!this.discovery.has(udid)) throw new Error(`device ${udid} is disconnected`)
+    return {
+      stop: async () => {
+        await writeFile(join(artifactsDir, "recording.mp4"), makeStubMp4())
+      },
+    }
   }
 }

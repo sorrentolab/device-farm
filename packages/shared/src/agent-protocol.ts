@@ -77,6 +77,7 @@ export const AgentRunRequest = Schema.Struct({
   env: Schema.optionalWith(Schema.Record({ key: Schema.String, value: Schema.String }), {
     default: () => ({}),
   }),
+  recordVideo: Schema.optionalWith(Schema.Boolean, { default: () => false }),
 })
 export type AgentRunRequest = typeof AgentRunRequest.Type
 

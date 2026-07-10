@@ -73,6 +73,9 @@ export type ExtendRequest = typeof ExtendRequest.Type
 
 // ---------- run detail ----------
 
+export const RunArtifactList = Schema.Struct({ files: Schema.Array(Schema.String) })
+export type RunArtifactList = typeof RunArtifactList.Type
+
 export const RunLogChunk = Schema.Struct({
   runId: Schema.String,
   seq: Schema.Number,
@@ -80,3 +83,14 @@ export const RunLogChunk = Schema.Struct({
   at: Schema.String,
 })
 export type RunLogChunk = typeof RunLogChunk.Type
+
+// ---------- /api/e2e (E2E_TEST_MODE only) ----------
+
+/** Trigger the artifact retention pass; retentionDays overrides the server default. */
+export const PruneArtifactsRequest = Schema.Struct({
+  retentionDays: Schema.optional(Schema.NonNegative),
+})
+export type PruneArtifactsRequest = typeof PruneArtifactsRequest.Type
+
+export const PruneArtifactsResult = Schema.Struct({ pruned: Schema.Number })
+export type PruneArtifactsResult = typeof PruneArtifactsResult.Type

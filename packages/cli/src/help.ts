@@ -25,7 +25,7 @@ const entries: Record<HelpTopic, HelpEntry> = {
   },
   run: {
     usage:
-      "dfarm run <flow.yaml> [--platform ios|android] [--kind simulator|emulator|physical] [--os-min X] [--os-max X] [--name NAME (exact; * wildcard or /regex/)] [--device UDID] [--app PATH] [--bundle-id ID] [--env K=V]... [--max-attempts N] [--wait]",
+      "dfarm run <flow.yaml> [--platform ios|android] [--kind simulator|emulator|physical] [--os-min X] [--os-max X] [--name NAME (exact; * wildcard or /regex/)] [--device UDID] [--app PATH] [--bundle-id ID] [--env K=V]... [--max-attempts N] [--record] [--wait]",
     description: "Submit a maestro flow run.",
     example: "dfarm run flow.yaml --platform ios --app MyApp.app --env API_URL=http://localhost --wait",
   },
@@ -60,6 +60,12 @@ const entries: Record<HelpTopic, HelpEntry> = {
     description: "Show a job and its attempt timeline.",
     example: "dfarm status job_123",
   },
+  artifacts: {
+    usage: "dfarm artifacts <jobId> [--attempt N] [--out DIR]",
+    description:
+      "Download a run's artifacts (logs, screenshots, video recording when --record was used).",
+    example: "dfarm artifacts job_123 --out ./artifacts",
+  },
   cancel: {
     usage: "dfarm cancel <jobId>",
     description: "Cancel a job.",
@@ -78,6 +84,7 @@ const commandRows: readonly [HelpTopic, string][] = [
   ["extend", "Extend a reservation"],
   ["release", "Release a reservation"],
   ["status", "Show job status"],
+  ["artifacts", "Download run artifacts"],
   ["cancel", "Cancel a job"],
 ]
 

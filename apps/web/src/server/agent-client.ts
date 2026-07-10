@@ -65,6 +65,7 @@ export const agentClient = {
         appPath: payload.appPath,
         appBundleId: payload.appBundleId,
         env: payload.env ?? {},
+        recordVideo: payload.recordVideo ?? false,
       }),
     ).pipe(Effect.asVoid),
 

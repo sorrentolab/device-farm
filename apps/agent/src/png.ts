@@ -45,6 +45,16 @@ const chunk = (type: string, data: Uint8Array): Uint8Array => {
   return concat([u32(data.length), typeBytes, data, u32(crc32(concat([typeBytes, data])))])
 }
 
+/** Just an ftyp box plus a marker string — enough for artifact tests, not a playable video. */
+export const makeStubMp4 = (): Uint8Array =>
+  concat([
+    u32(0x18),
+    ascii("ftypisom"),
+    u32(0x200),
+    ascii("isommp41"),
+    ascii("dfarm stub recording"),
+  ])
+
 export const makeStubPng = (counter: number): Uint8Array => {
   const width = 48
   const height = 32

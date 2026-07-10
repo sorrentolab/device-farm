@@ -22,6 +22,7 @@ export const runFlow = (
         appPath: command.appPath,
         appBundleId: command.appBundleId,
         env: command.env,
+        recordVideo: command.record,
       },
       createdBy: context.createdBy,
       maxAttempts: command.maxAttempts,
@@ -36,7 +37,11 @@ export const runFlow = (
     // (dfarm status <id>, dashboard) even before any log output arrives.
     yield* writeStderr(`job ${job.id} submitted — waiting for a device\n`)
 
-    return yield* tailUntilDone(context, job.id)
+    const exitCode = yield* tailUntilDone(context, job.id)
+    if (command.record) {
+      yield* writeStderr(`artifacts (incl. recording): dfarm artifacts ${job.id}\n`)
+    }
+    return exitCode
   })
 
 /**

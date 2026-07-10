@@ -3,6 +3,7 @@ import { deviceRepo } from "@/server/device-repo"
 import { jobRepo } from "@/server/job-repo"
 import { leaseService } from "@/server/lease-service"
 import type { JobRow } from "@/server/mappers"
+import { pruneArtifacts } from "@/server/retention"
 import { runRepo } from "@/server/run-repo"
 import { watchdogTick } from "@/server/watchdog"
 import { inngest } from "@/inngest/client"
@@ -283,4 +284,11 @@ export const watchdog = inngest.createFunction(
   },
 )
 
-export const functions = [runFlowJob, reserveJob, watchdog]
+export const artifactRetention = inngest.createFunction(
+  { id: "artifact-retention", triggers: [{ cron: "0 4 * * *" }] },
+  async ({ step }: any) => {
+    return step.run("prune-artifacts", () => run(pruneArtifacts()))
+  },
+)
+
+export const functions = [runFlowJob, reserveJob, watchdog, artifactRetention]

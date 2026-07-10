@@ -20,6 +20,7 @@ export type HelpTopic =
   | "extend"
   | "release"
   | "status"
+  | "artifacts"
   | "cancel"
 
 export type HelpCommand = {
@@ -41,6 +42,7 @@ export type RunCommand = {
   readonly env: Record<string, string>
   readonly maxAttempts?: number
   readonly wait: boolean
+  readonly record: boolean
 }
 
 export type ReserveCommand = {
@@ -84,6 +86,13 @@ export type StatusCommand = {
   readonly wait: boolean
 }
 
+export type ArtifactsCommand = {
+  readonly _tag: "Artifacts"
+  readonly jobId: string
+  readonly attempt?: number
+  readonly outDir?: string
+}
+
 export type CancelCommand = {
   readonly _tag: "Cancel"
   readonly jobId: string
@@ -110,6 +119,7 @@ export type CliCommand =
   | ExtendCommand
   | ReleaseCommand
   | StatusCommand
+  | ArtifactsCommand
   | CancelCommand
   | DocsCommand
   | ResetCommand

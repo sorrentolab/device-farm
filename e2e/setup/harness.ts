@@ -170,6 +170,13 @@ export class SeedClient {
     return this.stub({ type: "add_device", device })
   }
 
+  /** Trigger the artifact retention pass; retentionDays overrides the server default. */
+  pruneArtifacts(retentionDays?: number): Effect.Effect<{ pruned: number }, unknown, never> {
+    return this.client.e2ePruneArtifacts(
+      retentionDays === undefined ? {} : { retentionDays },
+    )
+  }
+
   private restoreDefaultStubDevices(): Effect.Effect<void, unknown, never> {
     return Effect.forEach(
       defaultStubUdids,

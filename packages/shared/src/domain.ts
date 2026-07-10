@@ -75,6 +75,7 @@ export const RunFlowPayload = Schema.Struct({
   env: Schema.optionalWith(Schema.Record({ key: Schema.String, value: Schema.String }), {
     default: () => ({}),
   }),
+  recordVideo: Schema.optionalWith(Schema.Boolean, { default: () => false }),
 })
 export type RunFlowPayload = typeof RunFlowPayload.Type
 

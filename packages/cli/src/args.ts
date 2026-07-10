@@ -14,6 +14,7 @@ const commandTopics: readonly HelpTopic[] = [
   "extend",
   "release",
   "status",
+  "artifacts",
   "cancel",
 ]
 
@@ -72,6 +73,8 @@ const parseArgsUnsafe = (argv: readonly string[]): CliCommand => {
       return parseRelease(args)
     case "status":
       return parseStatus(args)
+    case "artifacts":
+      return parseArtifacts(args)
     case "cancel":
       return parseCancel(args)
     default:
@@ -138,6 +141,7 @@ const parseRun = (args: readonly string[]): CliCommand => {
   let appBundleId: string | undefined
   let maxAttempts: number | undefined
   let wait = false
+  let record = false
   const env: Record<string, string> = {}
   const requirements: RequirementsInput = {}
 
@@ -151,6 +155,11 @@ const parseRun = (args: readonly string[]): CliCommand => {
 
     if (arg === "--wait") {
       wait = true
+      continue
+    }
+
+    if (arg === "--record") {
+      record = true
       continue
     }
 
@@ -201,6 +210,7 @@ const parseRun = (args: readonly string[]): CliCommand => {
     requirements,
     env,
     wait,
+    record,
     ...(appPath !== undefined ? { appPath } : {}),
     ...(appBundleId !== undefined ? { appBundleId } : {}),
     ...(maxAttempts !== undefined ? { maxAttempts } : {}),
@@ -440,6 +450,50 @@ const parseCancel = (args: readonly string[]): CliCommand => {
   return { _tag: "Cancel", jobId: requiredJobId }
 }
 
+const parseArtifacts = (args: readonly string[]): CliCommand => {
+  if (hasHelp(args)) return { _tag: "Help", topic: "artifacts" }
+
+  let jobId: string | undefined
+  let attempt: number | undefined
+  let outDir: string | undefined
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index] ?? ""
+    if (!arg.startsWith("--")) {
+      if (jobId !== undefined) failUsage("artifacts accepts exactly one job id", "artifacts")
+      jobId = arg
+      continue
+    }
+
+    const flag = parseFlag(arg, "artifacts")
+    switch (flag.name) {
+      case "--attempt": {
+        const consumed = readFlagValue(args, index, "artifacts")
+        attempt = parsePositiveInteger(consumed.value, "--attempt", "artifacts")
+        index = consumed.index
+        break
+      }
+      case "--out": {
+        const consumed = readFlagValue(args, index, "artifacts")
+        outDir = consumed.value
+        index = consumed.index
+        break
+      }
+      default:
+        failUsage(`unknown option '${flag.name}'`, "artifacts")
+    }
+  }
+
+  const requiredJobId = jobId ?? failUsage("artifacts requires <jobId>", "artifacts")
+
+  return {
+    _tag: "Artifacts",
+    jobId: requiredJobId,
+    ...(attempt !== undefined ? { attempt } : {}),
+    ...(outDir !== undefined ? { outDir } : {}),
+  }
+}
+
 const hasHelp = (args: readonly string[]): boolean =>
   args.some((arg) => arg === "--help" || arg === "-h")
 
@@ -483,6 +537,7 @@ const parseTopic = (value: string, label: "command" | "help topic"): HelpTopic =
     case "extend":
     case "release":
     case "status":
+    case "artifacts":
     case "cancel":
       return value
     default:
